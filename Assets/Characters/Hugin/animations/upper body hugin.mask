@@ -1,0 +1,155 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!319 &31900000
+AvatarMask:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: upper body hugin
+  m_Mask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+  m_Elements:
+  - m_Path: 
+    m_Weight: 1
+  - m_Path: Chaingun export
+    m_Weight: 1
+  - m_Path: Hugin export
+    m_Weight: 1
+  - m_Path: Hugin export/body connection
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/Helmet base
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/helmet front
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/helmet middle
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/helmet visor
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/piston back upper L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/piston back upper R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/piston front upper  L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/piston front upper  R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/long finger base L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/long finger base L/long finger mid L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/long finger base L/long finger mid L/long finger tip L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/short finger base L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/short finger base L/short finger mid L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/short finger base L/short finger mid L/short finger tip L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/thumb base L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/arm upper L/arm lower L/hand
+      L/thumb base L/thumb tip L
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder L/Left shoulder controll
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/long finger base R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/long finger base R/long finger mid R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/long finger base R/long finger mid R/long finger tip R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/short finger base R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/short finger base R/short finger mid R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/short finger base R/short finger mid R/short finger tip R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/thumb base R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/arm upper R/arm lower R/hand
+      R/thumb base R/thumb tip R
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/shoulder R/Right shoulder controll
+    m_Weight: 1
+  - m_Path: Hugin export/body connection/body/spring
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection/Gun  Root
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection/Gun  Root/chain spool
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection/Gun  Root/gun grip L
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection/Gun  Root/gun grip R
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection/Gun  Root/Handle L
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection/Gun  Root/Handle R
+    m_Weight: 1
+  - m_Path: Hugin export/gun connection/Gun  Root/trigger
+    m_Weight: 1
+  - m_Path: Hugin export/hips
+    m_Weight: 0
+  - m_Path: Hugin export/hips/leg upper L
+    m_Weight: 0
+  - m_Path: Hugin export/hips/leg upper L/leg lower L
+    m_Weight: 0
+  - m_Path: Hugin export/hips/leg upper L/leg lower L/foot L
+    m_Weight: 0
+  - m_Path: Hugin export/hips/leg upper R
+    m_Weight: 0
+  - m_Path: Hugin export/hips/leg upper R/leg lower R
+    m_Weight: 0
+  - m_Path: Hugin export/hips/leg upper R/leg lower R/foot R
+    m_Weight: 0
+  - m_Path: Hugin export/hips/piston back lower L
+    m_Weight: 0
+  - m_Path: Hugin export/hips/piston back lower R
+    m_Weight: 0
+  - m_Path: Hugin export/hips/piston front lower L
+    m_Weight: 0
+  - m_Path: Hugin export/hips/piston front lower R
+    m_Weight: 0
+  - m_Path: Hugin export/left knee controll
+    m_Weight: 0
+  - m_Path: Hugin export/right knee controll
+    m_Weight: 0
+  - m_Path: Hugin huvud export
+    m_Weight: 1
+  - m_Path: Hugin kropp export
+    m_Weight: 1
