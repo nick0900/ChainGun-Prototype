@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class GunAnchor : ChainAnchor
+public class GunAnchor : CableAnchor
 {
     [SerializeField] float startLength = 2;
 

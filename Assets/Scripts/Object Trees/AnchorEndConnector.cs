@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class AnchorEndConnector : GraphConnector
 {
-    [SerializeField] private NodeFunctionality chain = null;
+    [SerializeField] private CableJoint chain = null;
 
     private Transform parent = null;
 
@@ -16,7 +16,7 @@ public class AnchorEndConnector : GraphConnector
         }
         if (chain == null)
         {
-            chain = GetComponent<NodeFunctionality>();
+            chain = GetComponent<CableJoint>();
         }
         rb2d.useAutoMass = true;
         //offset = Vector2.zero;

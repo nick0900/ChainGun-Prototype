@@ -2,9 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ChainAnchor : ChainManager
+public class CableAnchor : CableBase
 {
-    [SerializeField] private ChainManager startHead;
+    [SerializeField] private CableBase startHead;
 
     [SerializeField] private float chainWidth = 0.1f;
 

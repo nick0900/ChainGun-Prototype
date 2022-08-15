@@ -32,7 +32,7 @@ public class SurfaceMaster : MonoBehaviour
 
         if (chainable)
         {
-            ChainTrigger trigger = collision.GetComponent<ChainTrigger>();
+            CableHitbox trigger = collision.GetComponent<CableHitbox>();
 
             if (trigger != null)
             {

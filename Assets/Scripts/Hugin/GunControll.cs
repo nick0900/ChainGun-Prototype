@@ -6,7 +6,7 @@ public class GunControll : MonoBehaviour
 {
     [SerializeField] GunConnector connectorGun;
 
-    [SerializeField] ChainAnchor anchorGun;
+    [SerializeField] CableAnchor anchorGun;
 
     [SerializeField] AnchorEndConnector connectorNode;
 

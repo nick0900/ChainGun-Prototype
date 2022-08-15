@@ -2,13 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-abstract public class ChainManager : MonoBehaviour
+abstract public class CableBase : MonoBehaviour
 {
-    protected ChainManager head = null;
+    protected CableBase head = null;
 
-    protected ChainManager tail = null;
+    protected CableBase tail = null;
 
-    [HideInInspector] public NodeFunctionality node = null;
+    [HideInInspector] public CableJoint node = null;
 
     [HideInInspector] static public float bias = 0.2f;
 
@@ -43,7 +43,7 @@ abstract public class ChainManager : MonoBehaviour
 
     public LinkType linkType;
 
-    public void ChainUpdate(ChainManager start)
+    public void ChainUpdate(CableBase start)
     {
         start.node.CableSegmentUpdate();
         if (start.head != null)
@@ -51,7 +51,7 @@ abstract public class ChainManager : MonoBehaviour
             ChainUpdate(start.head);
         }
     }
-    public void ChainSolve(ChainManager start)
+    public void ChainSolve(CableBase start)
     {
         start.node.CableSegmentSolve();
         if (start.head != null)
@@ -60,7 +60,7 @@ abstract public class ChainManager : MonoBehaviour
         }
     }
 
-    public void PositionSave(ChainManager start)
+    public void PositionSave(CableBase start)
     {
         prevPos = this.transform.position;
         prevTangentHead = this.tangentOffsetHead;
@@ -72,7 +72,7 @@ abstract public class ChainManager : MonoBehaviour
         }
     }
 
-    public void ChainDestroy(ChainManager start)
+    public void ChainDestroy(CableBase start)
     {
         if (start.head != null)
         {
@@ -81,27 +81,27 @@ abstract public class ChainManager : MonoBehaviour
         Destroy(start.gameObject);
     }
 
-    public ChainManager GetHead()
+    public CableBase GetHead()
     {
         return head;
     }
 
-    public ChainManager GetTail()
+    public CableBase GetTail()
     {
         return tail;
     }
 
-    public void AssignHead(ChainManager head)
+    public void AssignHead(CableBase head)
     {
         this.head = head;
     }
 
-    public void AssignTail(ChainManager tail)
+    public void AssignTail(CableBase tail)
     {
         this.tail = tail;
     }
 
-    public void AddFront(ChainManager newNode)
+    public void AddFront(CableBase newNode)
     {
         newNode.AssignHead(head);
 
@@ -112,7 +112,7 @@ abstract public class ChainManager : MonoBehaviour
         AssignHead(newNode);
     }
 
-    public void AddBack(ChainManager newNode)
+    public void AddBack(CableBase newNode)
     {
         newNode.AssignTail(tail);
 
@@ -125,8 +125,8 @@ abstract public class ChainManager : MonoBehaviour
 
     public void CutChain()
     {
-        head.GetComponent<ChainManager>().AssignTail(tail);
+        head.GetComponent<CableBase>().AssignTail(tail);
 
-        tail.GetComponent<ChainManager>().AssignHead(head);
+        tail.GetComponent<CableBase>().AssignHead(head);
     }
 }
