@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public class ConvexPolygonPulley : ChainMesh
+public class ConvexPolygonPulley : CableMeshInterface
 {
 
     [SerializeField] PolygonCollider2D data = null;
@@ -13,102 +13,46 @@ public class ConvexPolygonPulley : ChainMesh
 
     public override bool MeshGenerated { get { return data != null; } }
 
-    public override bool Errornous { get { return (MeshGenerated && !IsConvex(data.points)) || 
-                (MeshGenerated && !submesh && !CMDictionary.CMD.IsRegistered(data, this)) || 
-                (MeshGenerated && submesh && CMDictionary.CMD.IsRegistered(data, this)) ||
-                (MeshGenerated && (Polycenter(data.points) != center)) || 
-                (!MeshGenerated && CMDictionary.CMD.IsRegistered(this)); } }
+    public override bool Errornous { get { return !MeshGenerated || !IsConvex(data.points) || (Polycenter(data.points) != center); } }
 
-    public override void GenerateChainMesh()
+    protected override void SetupMesh()
     {
-        if (submesh) return;
-
         data = GetComponent<PolygonCollider2D>();
 
         if (data == null) return;
 
         center = Polycenter(data.points) - (Vector2)data.transform.position;
-
-        CMDictionary.CMD.Register(data, this);
-
-        PrintErrors();
     }
+
     public override void RemoveChainMesh()
     {
-        if (data != null)
-        {
-            CMDictionary.CMD.Unregister(data);
-        }
-
         center = Vector2.zero;
 
         data = null;
-    }
-
-    public override void GenerateSubMesh(ChainMesh root)
-    {
-        if (submesh) return;
-
-        data = GetComponent<PolygonCollider2D>();
-
-        if (data == null) return;
-
-        center = Polycenter(data.points);
-
-        CMDictionary.CMD.Register(data, root);
-
-        PrintErrors();
-    }
-
-    public override void ForceGenerateSubMesh(ChainMesh root)
-    {
-        if (!ProtectSettings)
-        {
-            submesh = true;
-        }
-
-        GenerateSubMesh(root);
     }
 
     public override bool PrintErrors()
     {
         bool error = false;
 
-        if (MeshGenerated && !IsConvex(data.points))
+        if (!MeshGenerated)
         {
             error = true;
-            print(this + "/Error: Polygon primitive is not convex");
+            print(this + "/Error: mesh not generated");
         }
-
-        if (MeshGenerated && !submesh && !CMDictionary.CMD.IsRegistered(data, this))
+        else
         {
-            if (!CMDictionary.CMD.IsRegistered(data))
+            if (!IsConvex(data.points))
             {
-                print(this + "/Error: collider:" + data + " not registered");
+                error = true;
+                print(this + "/Error: Polygon primitive is not convex");
             }
-            else
+
+            if (Polycenter(data.points) != center)
             {
-                print(this + "/Error: collider:" + data + " registered to another chainmesh");
+                error = true;
+                print(this + "/Error: center is not geometric center");
             }
-            error = true;
-        }
-
-        if (MeshGenerated && submesh && CMDictionary.CMD.IsRegistered(data, this))
-        {
-            print(this + "/Error: collider:" + data + " registered to this chainmesh in spite of being a submesh");
-            error = true;
-        }
-
-        if (MeshGenerated && (Polycenter(data.points) != center))
-        {
-            error = true;
-            print(this + "/Error: center is not geometric center");
-        }
-
-        if (!MeshGenerated && CMDictionary.CMD.IsRegistered(this))
-        {
-            error = true;
-            print(this + "/Error: Unknown collider is registered to chainmesh");
         }
 
         return error;
@@ -118,58 +62,27 @@ public class ConvexPolygonPulley : ChainMesh
     {
         bool errorsFixed = true;
 
-        if (MeshGenerated && !IsConvex(data.points))
+        if (!MeshGenerated)
         {
-            print(this + "/Error: Polygon primitive is not convex");
-            print(this + "/FixFailed: no automatic fix implemented");
             errorsFixed = false;
+            print(this + "/Error: mesh not generated");
+            print(this + "/FixFailed: you need to manually generate this or all cablemeshes");
         }
-
-        if (MeshGenerated && !submesh && !CMDictionary.CMD.IsRegistered(data, this))
+        else
         {
-            if (!CMDictionary.CMD.IsRegistered(data))
+            if (!IsConvex(data.points))
             {
-                print(this + "/Error: collider:" + data + " not registered");
-            }
-            else
-            {
-                print(this + "/Error: collider:" + data + " registered to another chainmesh");
-            }
-
-            CMDictionary.CMD.Register(data, this);
-
-            print(this + "/Fix: re registering");
-            if (!CMDictionary.CMD.IsRegistered(data, this))
-            {
-                print("Failed");
+                print(this + "/Error: Polygon primitive is not convex");
+                print(this + "/FixFailed: no automatic fix implemented, manual manipulation of polygon needed");
                 errorsFixed = false;
             }
-            else
+
+            if (Polycenter(data.points) != center)
             {
-                print("Succeded");
+                print(this + "/Error: center is not geometric center");
+                print(this + "/Fix: Recalculating Center");
+                center = Polycenter(data.points);
             }
-        }
-
-        if (MeshGenerated && submesh && CMDictionary.CMD.IsRegistered(data, this))
-        {
-            print(this + "/Error: collider:" + data + " registered to this chainmesh in spite of being a submesh");
-            print(this + "/Fix: removing chainmesh");
-
-            RemoveChainMesh();
-        }
-
-        if (MeshGenerated && (Polycenter(data.points) != center))
-        {
-            print(this + "/Error: center is not geometric center");
-            print(this + "/Fix: Recalculating Center");
-            center = Polycenter(data.points);
-        }
-
-        if (!MeshGenerated && CMDictionary.CMD.IsRegistered(this))
-        {
-            errorsFixed = false;
-            print(this + "/Error: Unknown collider is registered to chainmesh");
-            print(this + "/FixFailed: No way of unregistering collider. global collider recalculation or manual removal of collider needed!");
         }
 
         return errorsFixed;
@@ -300,4 +213,6 @@ public class ConvexPolygonPulley : ChainMesh
     {
         throw new System.NotImplementedException();
     }
+
+    
 }

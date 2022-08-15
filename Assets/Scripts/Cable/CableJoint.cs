@@ -436,11 +436,11 @@ public class CableJoint : CableBase
         newNode = null;
         Collider2D coll = hit.collider;
 
-        if (!CMDictionary.CMD.dictionary.ContainsKey(coll))
+        if (!CableEditorMenu.CMD.dictionary.ContainsKey(coll))
         {
             return false;
         }
-        CableMeshInteraction CMesh = CMDictionary.CMD.dictionary[coll];
+        CableMeshInteraction CMesh = CableEditorMenu.CMD.dictionary[coll];
 
         bool orientation = GetOrientation(hit, CMesh);
 

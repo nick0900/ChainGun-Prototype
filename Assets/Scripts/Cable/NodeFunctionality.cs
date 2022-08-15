@@ -54,7 +54,7 @@ public class NodeFunctionality : ChainManager
 
     private double epsilon = 0.000001;
 
-    public ChainMesh CMesh;
+    public CableMeshInterface CMesh;
 
     public Vector2 CMvertex;
 
@@ -436,11 +436,11 @@ public class NodeFunctionality : ChainManager
         newNode = null;
         Collider2D coll = hit.collider;
 
-        if (!CMDictionary.CMD.dictionary.ContainsKey(coll))
+        if (!CableEditorMenu.CMD.dictionary.ContainsKey(coll))
         {
             return false;
         }
-        ChainMesh CMesh = CMDictionary.CMD.dictionary[coll];
+        CableMeshInterface CMesh = CableEditorMenu.CMD.dictionary[coll];
 
         bool orientation = GetOrientation(hit, CMesh);
 
@@ -530,7 +530,7 @@ public class NodeFunctionality : ChainManager
         return true;
     }
 
-    bool GetOrientation(RaycastHit2D hit, ChainMesh CMesh)
+    bool GetOrientation(RaycastHit2D hit, CableMeshInterface CMesh)
     {
         Vector2 chainPoint = (((Vector2)tail.transform.position + tail.tangentOffsetHead) - ((Vector2)this.transform.position + this.tangentOffsetTail)) * hit.fraction;
 
