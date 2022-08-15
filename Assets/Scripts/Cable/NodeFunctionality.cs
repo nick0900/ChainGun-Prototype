@@ -42,8 +42,6 @@ public class NodeFunctionality : ChainManager
 
     private SurfaceMaster sm;
 
-    private HingeJoint2D hj2d;
-
     [SerializeField] private GameObject chainTriggerPrefab;
 
     private Transform triggerBox;
@@ -63,7 +61,6 @@ public class NodeFunctionality : ChainManager
 
     void Awake()
     {
-        hj2d = this.GetComponent<HingeJoint2D>();
         node = this.GetComponent<NodeFunctionality>();
 
         filter = new ContactFilter2D();
@@ -225,6 +222,7 @@ public class NodeFunctionality : ChainManager
 
     void FrictionUpdate()
     {
+        /*
         if (this.linkType != LinkType.Rolling || sm == null || sm.infiniteFriction) return;
 
         Quaternion currentRotation;
@@ -256,6 +254,7 @@ public class NodeFunctionality : ChainManager
         this.hj2d.motor = hm2d;
 
         previousHingeRotation = currentRotation;
+        */
     }
 
     void CableLengthUpdate()
@@ -484,10 +483,12 @@ public class NodeFunctionality : ChainManager
 
             Vector2 tangent;
 
+            /*
             if (!FindVertex(CMesh, onSame, ref orientation, out tangent, coll.transform.position, coll.transform.rotation))
             {
                 return false;
             }
+            
 
             newNode = ((GameObject)Instantiate(nodePrefab, tangent, Quaternion.identity)).GetComponent<NodeFunctionality>();
 
@@ -495,6 +496,7 @@ public class NodeFunctionality : ChainManager
 
             newNode.CMesh = CMesh;
             newNode.CMvertex = tangent;
+            */
         }
 
         newNode.orientation = !orientation;
@@ -520,8 +522,6 @@ public class NodeFunctionality : ChainManager
         {
             newNode.previousHingeRotation = newNode.transform.rotation;
         }
-
-        newNode.hj2d.connectedBody = newNode.hingeBody;
 
         newNode.name = this.name + (++kin).ToString();
 
@@ -550,255 +550,6 @@ public class NodeFunctionality : ChainManager
         print(hitDirection.normalized);
 
         return Vector2.SignedAngle((Vector2)tail.transform.position - (Vector2)this.transform.position, hitDirection) > 0;
-    }
-
-    bool FindVertex(ChainMesh CMesh, bool onSame, ref bool queryOrientation, out Vector2 tangent, Vector2 colliderOffset, Quaternion colliderRotation)
-    {
-        tangent = Vector2.zero;
-
-        //get points of the linesegment on the correct side of the cable trigger width;
-        Vector2 chainOrigin = (Vector2)this.transform.position + this.tangentOffsetTail;
-        Vector2 chainGoal = (Vector2)tail.transform.position + tail.tangentOffsetHead;
-
-        Vector2 chainNormal = (chainGoal - chainOrigin).normalized;
-
-        Vector2 offset = Vector2.Perpendicular(chainNormal) * chainWidth / 2 * triggerWidth * (orientation ? -1 : 1);
-
-        chainOrigin += offset;
-        chainGoal += offset;
-
-        int edgeClosestHit;
-
-        if (!IntersectionCheck(CMesh, chainNormal, out edgeClosestHit, chainOrigin, chainGoal, colliderOffset, colliderRotation))
-        {
-            return false;
-        }
-
-        Vector2[] vertecies;
-
-        if (!SurfaceMarch(CMesh, onSame, edgeClosestHit, ref queryOrientation, out vertecies, colliderOffset, colliderRotation))
-        {
-            return false;
-        }
-
-        if (vertecies.Length == 0)
-        {
-            return false;
-        }
-
-        tangent = ChainWrap(ref vertecies, queryOrientation, chainOrigin, chainNormal);
-        return true;
-    }
-
-    bool IntersectionCheck(ChainMesh CMesh, Vector2 chainNormal, out int firstEdgeHit, Vector2 chainOrigin, Vector2 chainGoal, Vector2 colliderOffset, Quaternion colliderRotation)
-    {
-        firstEdgeHit = 0;
-
-        int count = 0;
-        double closestIn = 1.0;
-        double closestOut = 1.0;
-        // loop through all edges in CMesh. check for intersection and assign in, out or none
-        for (int i = 0; i < CMesh.edges.Length; i++)
-        {
-            ChainMesh.Edge edge = CMesh.edges[i];
-            edge.hit = false;
-
-            Vector2 edgeStart = colliderRotation * (edge.start.point + colliderOffset);
-            Vector2 edgeEnd = colliderRotation * (edge.end.point + colliderOffset);
-
-            double t = (chainOrigin.x - edgeStart.x) * (edgeStart.y - edgeEnd.y) - (chainOrigin.y - edgeStart.y) * (edgeStart.x - edgeEnd.x);
-
-            double denominator = (chainOrigin.x - chainGoal.x) * (edgeStart.y - edgeEnd.y) - (chainOrigin.y - chainGoal.y) * (edgeStart.x - edgeEnd.x);
-
-            if (t > epsilon && t < denominator || t < epsilon && t > denominator)
-            {
-                double u = (chainOrigin.x - edgeStart.x) * (chainOrigin.y - chainGoal.y) - (chainOrigin.y - edgeStart.y) * (chainOrigin.x - chainGoal.x);
-
-                if (u > epsilon && u < denominator || u < epsilon && u > denominator)
-                {
-                    count++;
-                    t /= denominator;
-                    edge.hit = true;
-
-                    //intersection exist. figure out if goes in or out
-                    if (Vector2.SignedAngle(chainNormal, edge.vector) < 0)
-                    {
-                        //compare distance along the chain line segment
-                        if (t < closestIn)
-                        {
-                            closestIn = t;
-                            firstEdgeHit = i;
-                        }
-                    }
-                    else
-                    {
-                        if (t < closestOut)
-                        {
-                            closestOut = t;
-                        }
-                    }
-                }
-            }
-            CMesh.edges[i] = edge;
-        }
-
-        //if the closest hit is going out, subtract one from count. This is to stop situation where both chain origin and goal is inside the mesh and there are no other in out pairs inbetween
-        if (closestOut < closestIn)
-        {
-            count--;
-        }
-
-        // if there is only one hit or no hit no new node will be added in chain
-        if (count <= 1)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    bool SurfaceMarch(ChainMesh CMesh, bool onSame, int startingEdge, ref bool queryOrientation, out Vector2[] vertecies, Vector2 colliderOffset, Quaternion colliderRotation)
-    {
-        int max = CMesh.vertecies.Length;
-        Vector2[] stack = new Vector2[max];
-        int stackSize = 0;
-
-        // will march with the orientation, if that path is not allowed it will start over and march in opposite orientation and switch the orientation
-        if (queryOrientation)
-        {
-            if (!MarchWith(CMesh, startingEdge, max, onSame, ref stack, ref stackSize, colliderOffset, colliderRotation))
-            {
-                queryOrientation = !queryOrientation;
-                stackSize = 0;
-                if (!MarchAgainst(CMesh, startingEdge, max, onSame, ref stack, ref stackSize, colliderOffset, colliderRotation))
-                {
-                    vertecies = null;
-                    return false;
-                }
-            }
-        }
-        else
-        {
-            if (!MarchAgainst(CMesh, startingEdge, max, onSame, ref stack, ref stackSize, colliderOffset, colliderRotation))
-            {
-                queryOrientation = !queryOrientation;
-                stackSize = 0;
-                if (!MarchWith(CMesh, startingEdge, max, onSame, ref stack, ref stackSize, colliderOffset, colliderRotation))
-                {
-                    vertecies = null;
-                    return false;
-                }
-            }
-        }
-
-        if (stackSize < 1)
-        {
-            vertecies = null;
-            return false;
-        }
-
-        vertecies = new Vector2[stackSize];
-
-        int i = 0;
-        while (stackSize > 0)
-        {
-            vertecies[i++] = stack[--stackSize];
-        }
-
-        return true;
-    }
-
-    bool MarchWith(ChainMesh CMesh, int startingEdge, int max, bool onSame, ref Vector2[] stack, ref int stackSize, Vector2 colliderOffset, Quaternion colliderRotation)
-    {
-        int marcher = startingEdge;
-        while (stackSize < max)
-        {
-            ChainMesh.Vert vertex = CMesh.edges[marcher].end;
-
-            //indexing the marcher to go in positive orientation
-            marcher++;
-            if (marcher >= max)
-            {
-                marcher = 0;
-            }
-
-            ChainMesh.Edge edge = CMesh.edges[marcher];
-
-            //if the marcher encounters the vertex of the current node or an edge where the chain line is going in again
-            if (onSame && this.CMvertex == vertex.point)
-            {
-                return false;
-            }
-
-            //the vertex is added if it is chainable
-            if (vertex.Chainable)
-            {
-                stack[stackSize++] = colliderRotation * (vertex.point + colliderOffset);
-            }
-            
-            //if the marcher encounters an edge where the chain line is going out the march is successfull and the allowed encountered vertecies is returned
-            if (edge.hit)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool MarchAgainst(ChainMesh CMesh, int startingEdge, int max, bool onSame, ref Vector2[] stack, ref int stackSize, Vector2 colliderOffset, Quaternion colliderRotation)
-    {
-        int marcher = startingEdge;
-        while (stackSize < max)
-        {
-            ChainMesh.Vert vertex = CMesh.edges[marcher].start;
-
-            //indexing the marcher to go in negative orientation
-            marcher--;
-            if (marcher < 0)
-            {
-                marcher = max - 1;
-            }
-
-            ChainMesh.Edge edge = CMesh.edges[marcher];
-
-            //if the marcher encounters the vertex of the current node or an edge where the chain line is going in again
-            if (onSame && this.CMvertex == vertex.point)
-            {
-                return false;
-            }
-
-            //the vertex is added if it is chainable
-            if (vertex.Chainable)
-            {
-                stack[stackSize++] = colliderRotation * (vertex.point + colliderOffset);
-            }
-
-            //if the marcher encounters an edge where the chain line is going out the march is successfull and the allowed encountered vertecies is returned
-            if (edge.hit)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    Vector2 ChainWrap(ref Vector2[] vertecies, bool queryOrientation, Vector2 chainOrigin, Vector2 chainNormal)
-    {
-        float bestAngle = 0;
-        Vector2 tangent = Vector2.zero;
-
-        for (int i = 0; i < vertecies.Length; i++)
-        {
-            Vector2 line = vertecies[i] - chainOrigin;
-
-            float iAngle = Vector2.SignedAngle(line, chainNormal);
-            if (queryOrientation ? bestAngle < iAngle : bestAngle > iAngle)
-            {
-                tangent = vertecies[i];
-                bestAngle = iAngle;
-            }
-        }
-        return tangent;
     }
 
     void NodeRemover()
