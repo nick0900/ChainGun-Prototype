@@ -139,8 +139,8 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
-        Vector2 tailDirection = tailPrevious - ((Vector2)data.transform.position + data.offset);
-        Vector2 headDirection = headPrevious - ((Vector2)data.transform.position + data.offset);
+        Vector2 tailDirection = tailPrevious - CenterWorldPosition(data);
+        Vector2 headDirection = headPrevious - CenterWorldPosition(data);
 
         return Vector2.SignedAngle(tailDirection, headDirection) > 0;
     }

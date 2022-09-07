@@ -25,4 +25,9 @@ abstract public class CableMeshInterface : CableMeshGeneration
     abstract public Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, ref ChainJointCache cache);
 
     abstract public void CreateChainCollider(float chainWidth);
+
+    protected Vector2 CenterWorldPosition(Collider2D colider)
+    {
+        return (Vector2)this.transform.TransformPoint(colider.offset);
+    }
 }

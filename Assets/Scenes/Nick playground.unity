@@ -2840,15 +2840,9 @@ PolygonCollider2D:
   m_Points:
     m_Paths:
     - - {x: 0.34055042, y: 3.1000586}
-      - {x: -2.6087875, y: 2.9476724}
-      - {x: -2.5233116, y: 1.1646401}
-      - {x: -3.5116577, y: 2.5337896}
-      - {x: -5.890889, y: 0.76907134}
-      - {x: -4.369608, y: -1.3736484}
-      - {x: 3.1497335, y: -1.3795433}
-      - {x: 3.7826066, y: -0.17048597}
-      - {x: 1.1127993, y: 1.163335}
-      - {x: 0.5395584, y: -0.0031537414}
+      - {x: -2.6768599, y: 2.9698377}
+      - {x: -2.370305, y: -1.898685}
+      - {x: 0.67334557, y: -1.6639354}
 --- !u!4 &1264554395
 Transform:
   m_ObjectHideFlags: 0
@@ -2864,7 +2858,8 @@ Transform:
   - {fileID: 1181254934}
   - {fileID: 111330371}
   - {fileID: 708562856}
-  - {fileID: 2122656386}
+  - {fileID: 1963711902}
+  - {fileID: 1485491668}
   m_Father: {fileID: 0}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -2880,133 +2875,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce89a53af06d30642a4fb3f910bb6fdc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vertecies:
-  - point: {x: 0.34055042, y: 3.1000586}
-    Chainable: 1
-  - point: {x: -2.6087875, y: 2.9476724}
-    Chainable: 1
-  - point: {x: -2.5233116, y: 1.1646401}
-    Chainable: 0
-  - point: {x: -3.5116577, y: 2.5337896}
-    Chainable: 1
-  - point: {x: -5.890889, y: 0.76907134}
-    Chainable: 1
-  - point: {x: -4.369608, y: -1.3736484}
-    Chainable: 1
-  - point: {x: 3.1497335, y: -1.3795433}
-    Chainable: 1
-  - point: {x: 3.7826066, y: -0.17048597}
-    Chainable: 1
-  - point: {x: 1.1127993, y: 1.163335}
-    Chainable: 1
-  - point: {x: 0.5395584, y: -0.0031537414}
-    Chainable: 0
-  edges:
-  - start:
-      point: {x: 0.34055042, y: 3.1000586}
-      Chainable: 1
-    end:
-      point: {x: -2.6087875, y: 2.9476724}
-      Chainable: 1
-    vector: {x: -2.949338, y: -0.15238619}
-    center:
-      point: {x: -0.9233268, y: 0.9946215}
-    hit: 0
-  - start:
-      point: {x: -2.6087875, y: 2.9476724}
-      Chainable: 1
-    end:
-      point: {x: -2.5233116, y: 1.1646401}
-      Chainable: 0
-    vector: {x: 0.08547592, y: -1.7830323}
-    center:
-      point: {x: -0.9233268, y: 0.9946215}
-    hit: 0
-  - start:
-      point: {x: -2.5233116, y: 1.1646401}
-      Chainable: 0
-    end:
-      point: {x: -3.5116577, y: 2.5337896}
-      Chainable: 1
-    vector: {x: -0.9883461, y: 1.3691496}
-    center:
-      point: {x: -3.6173604, y: 0.23780034}
-    hit: 0
-  - start:
-      point: {x: -3.5116577, y: 2.5337896}
-      Chainable: 1
-    end:
-      point: {x: -5.890889, y: 0.76907134}
-      Chainable: 1
-    vector: {x: -2.3792315, y: -1.7647183}
-    center:
-      point: {x: -3.6173604, y: 0.23780034}
-    hit: 0
-  - start:
-      point: {x: -5.890889, y: 0.76907134}
-      Chainable: 1
-    end:
-      point: {x: -4.369608, y: -1.3736484}
-      Chainable: 1
-    vector: {x: 1.5212812, y: -2.1427197}
-    center:
-      point: {x: -3.6173604, y: 0.23780034}
-    hit: 0
-  - start:
-      point: {x: -4.369608, y: -1.3736484}
-      Chainable: 1
-    end:
-      point: {x: 3.1497335, y: -1.3795433}
-      Chainable: 1
-    vector: {x: 7.5193415, y: -0.0058948994}
-    center:
-      point: {x: 0, y: 0}
-    hit: 0
-  - start:
-      point: {x: 3.1497335, y: -1.3795433}
-      Chainable: 1
-    end:
-      point: {x: 3.7826066, y: -0.17048597}
-      Chainable: 1
-    vector: {x: 0.63287306, y: 1.2090573}
-    center:
-      point: {x: 1.8670243, y: -0.3810523}
-    hit: 0
-  - start:
-      point: {x: 3.7826066, y: -0.17048597}
-      Chainable: 1
-    end:
-      point: {x: 1.1127993, y: 1.163335}
-      Chainable: 1
-    vector: {x: -2.6698074, y: 1.3338209}
-    center:
-      point: {x: 1.8670243, y: -0.3810523}
-    hit: 0
-  - start:
-      point: {x: 1.1127993, y: 1.163335}
-      Chainable: 1
-    end:
-      point: {x: 0.5395584, y: -0.0031537414}
-      Chainable: 0
-    vector: {x: -0.5732409, y: -1.1664886}
-    center:
-      point: {x: 1.8670243, y: -0.3810523}
-    hit: 0
-  - start:
-      point: {x: 0.5395584, y: -0.0031537414}
-      Chainable: 0
-    end:
-      point: {x: 0.34055042, y: 3.1000586}
-      Chainable: 1
-    vector: {x: -0.19900799, y: 3.1032124}
-    center:
-      point: {x: -0.9233268, y: 0.9946215}
-    hit: 0
-  centers:
-  - point: {x: -3.6173604, y: 0.23780034}
-  - point: {x: -0.9233268, y: 0.9946215}
-  - point: {x: 1.8670243, y: -0.3810523}
-  previewRender: {fileID: 0}
 --- !u!114 &1264554397
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3019,13 +2887,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54dcc9c9364dda043bc28e0707664e2f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Stickable: 1
-  graphObject: {fileID: 0}
-  chainable: 1
-  hitbox: {fileID: 1264554394}
-  infiniteFriction: 0
-  staticFrictConst: 0.2
-  kineticFrictConst: 0.1
 --- !u!1 &1366258500
 GameObject:
   m_ObjectHideFlags: 0
@@ -3650,6 +3511,64 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1485491667
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1485491668}
+  - component: {fileID: 1485491669}
+  m_Layer: 0
+  m_Name: box 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1485491668
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485491667}
+  m_LocalRotation: {x: -0, y: -0, z: 0.3162941, w: 0.9486612}
+  m_LocalPosition: {x: -3.35, y: -0.19, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1264554395}
+  m_RootOrder: 4
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 36.878}
+--- !u!61 &1485491669
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1485491667}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: -0.011832237, y: -0.074157834}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 3.019373, y: 4.7026625}
+  m_EdgeRadius: 0
 --- !u!1 &1687633370
 GameObject:
   m_ObjectHideFlags: 0
@@ -4181,6 +4100,64 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 6400000, guid: 31411b412f4765b4eb4314f1ddbb88f1, type: 3}
   m_SourcePrefab: {fileID: 100100000, guid: 31411b412f4765b4eb4314f1ddbb88f1, type: 3}
+--- !u!1 &1963711901
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1963711902}
+  - component: {fileID: 1963711903}
+  m_Layer: 0
+  m_Name: box 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1963711902
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1963711901}
+  m_LocalRotation: {x: -0, y: -0, z: -0.2293474, w: 0.9733447}
+  m_LocalPosition: {x: 1.47, y: -1.55, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1264554395}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -26.517}
+--- !u!61 &1963711903
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1963711901}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: -0.011832237, y: -0.074157834}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0, y: 0}
+    oldSize: {x: 0, y: 0}
+    newSize: {x: 0, y: 0}
+    adaptiveTilingThreshold: 0
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 3.019373, y: 4.7026625}
+  m_EdgeRadius: 0
 --- !u!1 &1993595716
 GameObject:
   m_ObjectHideFlags: 0
@@ -4428,37 +4405,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
---- !u!1 &2122656385
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2122656386}
-  m_Layer: 0
-  m_Name: measure
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2122656386
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2122656385}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.9, y: -0.4, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1264554395}
-  m_RootOrder: 3
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &371941087951049364
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -16,7 +16,7 @@ public class CirclePulley : CableMeshInterface
     {
         get
         {
-            return !MeshGenerated || (data.radius <= 0);
+            return !MeshGenerated;
         }
     }
 
@@ -38,14 +38,6 @@ public class CirclePulley : CableMeshInterface
             error = true;
             print(this + "/Error: mesh not generated");
         }
-        else
-        {
-            if (data.radius <= 0)
-            {
-                error = true;
-                print(this + "/Error: radious of circular pulley must be greater than 0");
-            }
-        }
         return error;
     }
 
@@ -59,22 +51,13 @@ public class CirclePulley : CableMeshInterface
             print(this + "/Error: mesh not generated");
             print(this + "/FixFailed: you need to manually generate this or all cablemeshes");
         }
-        else
-        {
-            if (data.radius <= 0)
-            {
-                print(this + "/Error: radious of circular pulley must be greater than 0");
-                print(this + "/FixFailed: no automatic fix implemented");
-                errorsFixed = false;
-            }
-        }
         return errorsFixed;
     }
 
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
-        Vector2 tailDirection = tailPrevious - (Vector2)data.transform.position + data.offset;
-        Vector2 headDirection = headPrevious - (Vector2)data.transform.position + data.offset;
+        Vector2 tailDirection = tailPrevious - CenterWorldPosition(data);
+        Vector2 headDirection = headPrevious - CenterWorldPosition(data);
 
         return Vector2.SignedAngle(tailDirection, headDirection) > 0;
     }
