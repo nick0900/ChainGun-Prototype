@@ -6,29 +6,60 @@ using UnityEngine;
 public class ConvexPolygonPulley : CableMeshInterface
 {
 
-    [SerializeField] PolygonCollider2D data = null;
-    [SerializeField] Vector2 center = Vector2.zero;
+    [SerializeField] PolygonCollider2D pulleyCollider = null;
+    
+    struct VertexData
+    {
+        public Vector2 cornerNormal;
+        public float edgeLength;
+    }
+
+    private List<VertexData> polygonData = null;
+
+    private Vector2 previousPosition = Vector2.zero;
+    private Vector2 currentPosition = Vector2.zero;
 
     public override CMPrimitives ChainMeshPrimitiveType { get { return CMPrimitives.polygon; } }
 
-    public override bool MeshGenerated { get { return data != null; } }
+    public override Vector2 PulleyCentreGeometrical
+    {
+        get
+        {
+            return pulleyCollider.attachedRigidbody.worldCenterOfMass;
+        }
+    }
 
-    public override bool Errornous { get { return !MeshGenerated || !IsConvex(data.points) || (Polycenter(data.points) != center); } }
+    protected override Vector2 PulleyToWorldTransform(Vector2 point)
+    {
+        return pulleyCollider.transform.TransformPoint(point + pulleyCollider.offset);
+    }
+
+    public override Vector2 PulleyCentreOfMass
+    {
+        get
+        {
+            return pulleyCollider.transform.TransformPoint(pulleyCollider.offset);
+        }
+    }
+
+    public override bool MeshGenerated { get { return pulleyCollider != null; } }
+
+    public override bool Errornous { get { return !MeshGenerated || !IsConvex() || !DataCheck() || !pulleyCollider.OverlapPoint(PulleyCentreGeometrical); } }
 
     protected override void SetupMesh()
     {
-        data = GetComponent<PolygonCollider2D>();
+        pulleyCollider = GetComponent<PolygonCollider2D>();
 
-        if (data == null) return;
+        if (pulleyCollider == null) return;
 
-        center = Polycenter(data.points) - (Vector2)data.transform.position;
+        UpdatePolygonData();
     }
 
     public override void RemoveChainMesh()
     {
-        center = Vector2.zero;
+        polygonData = null;
 
-        data = null;
+        pulleyCollider = null;
     }
 
     public override bool PrintErrors()
@@ -42,16 +73,22 @@ public class ConvexPolygonPulley : CableMeshInterface
         }
         else
         {
-            if (!IsConvex(data.points))
+            if (!IsConvex())
             {
                 error = true;
                 print(this + "/Error: Polygon primitive is not convex");
             }
 
-            if (Polycenter(data.points) != center)
+            if (!DataCheck())
             {
                 error = true;
-                print(this + "/Error: center is not geometric center");
+                print(this + "/Error: polygon help data unsynched");
+            }
+
+            if (!pulleyCollider.OverlapPoint(PulleyCentreGeometrical))
+            {
+                error = true;
+                print(this + "/Error: polygon collider offset point not contained in polygon");
             }
         }
 
@@ -70,33 +107,40 @@ public class ConvexPolygonPulley : CableMeshInterface
         }
         else
         {
-            if (!IsConvex(data.points))
+            if (!IsConvex())
             {
                 print(this + "/Error: Polygon primitive is not convex");
                 print(this + "/FixFailed: no automatic fix implemented, manual manipulation of polygon needed");
                 errorsFixed = false;
             }
 
-            if (Polycenter(data.points) != center)
+            if (!DataCheck())
             {
-                print(this + "/Error: center is not geometric center");
-                print(this + "/Fix: Recalculating Center");
-                center = Polycenter(data.points);
+                print(this + "/Error: polygon help data unsynched");
+                print(this + "/Fix: polygon help data is updated");
+                UpdatePolygonData();
+            }
+
+            if (!pulleyCollider.OverlapPoint(PulleyCentreGeometrical))
+            {
+                print(this + "/Error: polygon collider offset point not contained in polygon");
+                print(this + "/Fix: polygon offset and points are recalculated");
+                RecalculatePolygonCollider();
             }
         }
 
         return errorsFixed;
     }
 
-    static public Vector2 Polycenter(Vector2[] polygon)
+    private Vector2 Polycenter()
     {
         Vector2 sumCenter = Vector2.zero;
         float sumWeight = 0;
 
-        for (int i = 0; i < polygon.Length; i++)
+        for (int i = 0; i <  pulleyCollider.points.Length; i++)
         {
             int next = i + 1;
-            if (next >= polygon.Length)
+            if (next >= pulleyCollider.points.Length)
             {
                 next = 0;
             }
@@ -104,109 +148,194 @@ public class ConvexPolygonPulley : CableMeshInterface
             int prev = i - 1;
             if (prev <= -1)
             {
-                prev = polygon.Length - 1;
+                prev = pulleyCollider.points.Length - 1;
             }
 
-            float weight = (polygon[i] - polygon[next]).magnitude + (polygon[i] - polygon[prev]).magnitude;
-            sumCenter += polygon[i] * weight;
+            float weight = (pulleyCollider.points[i] - pulleyCollider.points[next]).magnitude + (pulleyCollider.points[i] - pulleyCollider.points[prev]).magnitude;
+            sumCenter += pulleyCollider.points[i] * weight;
             sumWeight += weight;
         }
         return sumCenter / sumWeight;
     }
 
-    static public bool IsConvex(Vector2[] polygon)
+    public void RecalculatePolygonCollider()
     {
-        Vector2 first = polygon[polygon.Length - 1] - polygon[0];
-        Vector2 second = polygon[1] - polygon[0];
+        Vector2 newCentreOffset = Polycenter();
+
+        pulleyCollider.offset += newCentreOffset;
+        for (int i = 0; i < pulleyCollider.points.Length; i++)
+        {
+            pulleyCollider.points[i] -= newCentreOffset;
+        }
+    }
+
+
+
+    private bool IsConvex()
+    {
+        Vector2 first = pulleyCollider.points[pulleyCollider.points.Length - 1] - pulleyCollider.points[0];
+        Vector2 second = pulleyCollider.points[1] - pulleyCollider.points[0];
 
         if (Vector2.SignedAngle(first, second) < 0) return false;
 
-        for (int i = 1; i < polygon.Length - 1; i++)
+        for (int i = 1; i < pulleyCollider.points.Length - 1; i++)
         {
-            first = polygon[i - 1] - polygon[i];
-            second = polygon[i + 1] - polygon[i];
+            first = pulleyCollider.points[i - 1] - pulleyCollider.points[i];
+            second = pulleyCollider.points[i + 1] - pulleyCollider.points[i];
 
             if (Vector2.SignedAngle(first, second) < 0) return false;
         }
 
-        first = polygon[polygon.Length - 2] - polygon[polygon.Length - 1];
-        second = polygon[0] - polygon[polygon.Length - 1];
+        first = pulleyCollider.points[pulleyCollider.points.Length - 2] - pulleyCollider.points[pulleyCollider.points.Length - 1];
+        second = pulleyCollider.points[0] - pulleyCollider.points[pulleyCollider.points.Length - 1];
 
         if (Vector2.SignedAngle(first, second) < 0) return false;
 
         return true;
     }
 
-    public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
+    public void UpdatePolygonData()
     {
-        Vector2 tailDirection = tailPrevious - CenterWorldPosition(data);
-        Vector2 headDirection = headPrevious - CenterWorldPosition(data);
+        if (pulleyCollider.points.Length < 3) return;
 
-        return Vector2.SignedAngle(tailDirection, headDirection) > 0;
+        polygonData = new List<VertexData>();
+
+        for (int i = 0; i < pulleyCollider.points.Length; i++)
+        {
+            Vector2 edgeBack;
+            Vector2 edgeFront;
+            VertexData vertexData = new VertexData();
+            if (i == 0)
+            {
+                edgeBack = pulleyCollider.points[pulleyCollider.points.Length - 1] - pulleyCollider.points[0];
+                edgeFront = pulleyCollider.points[1] - pulleyCollider.points[0];
+            }
+            else if (i == pulleyCollider.points.Length - 1)
+            {
+                edgeBack = pulleyCollider.points[pulleyCollider.points.Length - 2] - pulleyCollider.points[pulleyCollider.points.Length - 1];
+                edgeFront = pulleyCollider.points[0] - pulleyCollider.points[pulleyCollider.points.Length - 1];
+            }
+            else
+            {
+                edgeBack = pulleyCollider.points[i - 1] - pulleyCollider.points[i];
+                edgeFront = pulleyCollider.points[i + 1] - pulleyCollider.points[i];
+            }
+
+            vertexData.cornerNormal = (-Vector2.Lerp(edgeBack, edgeFront, 0.5f)).normalized;
+
+            vertexData.edgeLength = edgeFront.magnitude;
+
+            polygonData.Add(vertexData);
+        }
     }
 
-    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, ref ChainJointCache cache)
+    public bool DataCheck()
     {
-        int highestIndex = cache.polygonIndex;
-        if (highestIndex < 0 || highestIndex >= data.points.Length)
-        {
-            highestIndex = 0;
-        }
-        Vector2 highestVector = (Vector2)data.transform.position + data.offset + data.points[highestIndex] - point;
+        if (polygonData == null) return false;
+        if (pulleyCollider.points.Length < 3) return false;
+        if (pulleyCollider.points.Length != polygonData.Count) return false;
 
-        int currentIndex = highestIndex + 1;
-        if (currentIndex >= data.points.Length)
+        for (int i = 0; i < pulleyCollider.points.Length; i++)
         {
-            currentIndex = 0;
-        }
-        Vector2 currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
-
-        float angle = Vector2.SignedAngle(highestVector, currentVector);
-
-        if (((angle == 0) && (currentVector.magnitude < highestVector.magnitude)) || ((angle < 0) == orientation))
-        {
-            currentIndex = highestIndex - 1;
-            if (currentIndex < 0)
+            Vector2 edgeBack;
+            Vector2 edgeFront;
+            if (i == 0)
             {
-                currentIndex = data.points.Length - 1;
+                edgeBack = pulleyCollider.points[pulleyCollider.points.Length - 1] - pulleyCollider.points[0];
+                edgeFront = pulleyCollider.points[1] - pulleyCollider.points[0];
             }
-            currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
-
-            angle = Vector2.SignedAngle(highestVector, currentVector);
-
-            while (((angle == 0) && (currentVector.magnitude < highestVector.magnitude)) || ((angle < 0) == orientation))
+            else if (i == pulleyCollider.points.Length - 1)
             {
-                highestIndex = currentIndex;
+                edgeBack = pulleyCollider.points[pulleyCollider.points.Length - 2] - pulleyCollider.points[pulleyCollider.points.Length - 1];
+                edgeFront = pulleyCollider.points[0] - pulleyCollider.points[pulleyCollider.points.Length - 1];
+            }
+            else
+            {
+                edgeBack = pulleyCollider.points[i - 1] - pulleyCollider.points[i];
+                edgeFront = pulleyCollider.points[i + 1] - pulleyCollider.points[i];
+            }
+
+            if (polygonData[i].cornerNormal != (-Vector2.Lerp(edgeBack, edgeFront, 0.5f)).normalized) return false;
+
+            if (polygonData[i].edgeLength != edgeFront.magnitude) return false;
+        }
+
+        return true;
+    }
+
+    private void Awake()
+    {
+        previousPosition = PulleyCentreGeometrical;
+        currentPosition = PulleyCentreGeometrical;
+
+        if (MeshGenerated)
+        {
+            UpdatePolygonData();
+        }
+    }
+    private void FixedUpdate()
+    {
+        if (pulleyCollider.attachedRigidbody.bodyType != RigidbodyType2D.Static)
+        {
+            previousPosition = currentPosition;
+            currentPosition = PulleyCentreGeometrical;
+        }
+    }
+
+    public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
+    {
+        Vector2 cableVector = headPrevious - tailPrevious;
+        Vector2 centreVector = previousPosition - tailPrevious;
+
+        return Vector2.SignedAngle(cableVector, centreVector) >= 0;
+    }
+
+    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, out int vertex)
+    {
+        int highestIndex = 0;
+        Vector2 highestVector = PulleyCentreGeometrical + pulleyCollider.points[highestIndex] - point;
+
+        for (int i = 1; i < pulleyCollider.points.Length; i++)
+        {
+            Vector2 currentVector = (Vector2)pulleyCollider.transform.position + pulleyCollider.offset + pulleyCollider.points[i] - point;
+
+            float angle = Vector2.SignedAngle(highestVector, currentVector);
+
+            if (((angle == 0) && (currentVector.magnitude < highestVector.magnitude)) || ((angle < 0) == orientation))
+            {
+                highestIndex = i;
                 highestVector = currentVector;
-
-                currentIndex--;
-                if (currentIndex < 0)
-                {
-                    currentIndex = data.points.Length - 1;
-                }
-                currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
-
-                angle = Vector2.SignedAngle(highestVector, currentVector);
             }
         }
-        else
+
+        vertex = highestIndex;
+
+
+        return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) + polygonData[highestIndex].cornerNormal * chainWidth / 2;
+    }
+
+    public override float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation)
+    {
+        float distance = 0.0f;
+        
+        if (orientation)
         {
-            while (((angle == 0) && (currentVector.magnitude < highestVector.magnitude)) || ((angle < 0) == orientation))
-            {
-                highestIndex = currentIndex;
-                highestVector = currentVector;
+            int aux = prevVertex;
+            prevVertex = currentVertex;
+            currentVertex = aux;
+        }
 
-                currentIndex++;
-                if (currentIndex >= data.points.Length)
-                {
-                    currentIndex = 0;
-                }
-                currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
+        while (prevVertex != currentVertex)
+        {
+            distance += polygonData[prevVertex].edgeLength;
+            prevVertex++;
+            if (prevVertex >= polygonData.Count - 1)
+            {
+                prevVertex = 0;
             }
         }
 
-        cache.polygonIndex = highestIndex;
-        return highestVector + point;
+        return distance;
     }
 
     public override void CreateChainCollider(float chainWidth)

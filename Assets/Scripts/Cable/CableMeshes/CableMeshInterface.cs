@@ -12,22 +12,27 @@ abstract public class CableMeshInterface : CableMeshGeneration
         polygon
     }
 
-    public struct ChainJointCache
-    {
-        public int submeshIndex;
-        public int polygonIndex;
-    }
+    //global position of pulley geometrical centre
+    abstract public Vector2 PulleyCentreGeometrical { get; }
+
+    //transformation from a local point on the pulley to world space
+    abstract protected Vector2 PulleyToWorldTransform(Vector2 point);
+
+    //global position of pulley physics current centre of mass
+    abstract public Vector2 PulleyCentreOfMass { get; }
+
 
     abstract public CMPrimitives ChainMeshPrimitiveType { get; }
 
+    //Considering the cable direction going from tail to head, a true orientation will have the cable wrapping counter-clockwise
+    //The orientation is calculated throught the relative movement of the cable to the pulley. Only call function at first collision and save that orientation
+    //most accurate when called during a collision hit after the fixed update is done
     abstract public bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious);
 
-    abstract public Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, ref ChainJointCache cache);
+    // will return the global tangent offset from the pulley center. the width of the cable is taken into consideration meaning the tangent point is in the middle of the cable
+    abstract public Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float cableWidth, out int vertex);
 
-    abstract public void CreateChainCollider(float chainWidth);
+    abstract public float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation);
 
-    protected Vector2 CenterWorldPosition(Collider2D colider)
-    {
-        return (Vector2)this.transform.TransformPoint(colider.offset);
-    }
+    abstract public void CreateChainCollider(float cableWidth);
 }

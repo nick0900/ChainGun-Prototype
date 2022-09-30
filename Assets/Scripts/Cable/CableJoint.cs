@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class CableJoint : CableBase
 {
-    // gör om chainManager och NodeFunctionality till scriptable objects? Uppdastera också namn och skriv kommentarer
-
     [SerializeField] private GameObject nodePrefab;
 
     int kin = 0;
@@ -32,7 +30,7 @@ public class CableJoint : CableBase
 
     [HideInInspector] public Quaternion previousRotation;
 
-    [HideInInspector] public Quaternion previousHingeRotation;
+    //[HideInInspector] public Quaternion previousHingeRotation;
 
     [HideInInspector] public CircleCollider2D previousPulley = null;
 
@@ -54,9 +52,7 @@ public class CableJoint : CableBase
 
     private double epsilon = 0.000001;
 
-    public CableMeshInteraction CMesh;
-
-    public Vector2 CMvertex;
+    public CableMeshInterface CableMesh;
 
 
     void Awake()
@@ -136,74 +132,6 @@ public class CableJoint : CableBase
 
         this.tangentOffsetTail = this.tOffTail;
         this.tangentOffsetHead = this.tOffHead;
-    }
-
-    void TangentPointCircle(Vector2 P1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2)
-    {
-        Vector2 d = P2 - P1;
-
-        if (d.magnitude <= r2 - chainWidth/2)
-        {
-            //print("fuck");
-            throw new System.Exception();
-            //tangentOffset2 = Vector2.zero;
-            //return;
-        }
-
-        float alpha = d.x >= 0 ? Mathf.Asin(d.y / d.magnitude) : Mathf.PI - Mathf.Asin(d.y / d.magnitude);
-
-        float phi = Mathf.Asin((r2 - chainWidth/2) / d.magnitude);
-
-        alpha = orientation2 ? alpha - Mathf.PI / 2 - phi : alpha + Mathf.PI / 2 + phi;
-
-        tangentOffset2 = r2 * new Vector2(Mathf.Cos(alpha), Mathf.Sin(alpha));
-    }
-
-    void TangentCircleCircle(Vector2 P1, float r1, bool orientation1, out Vector2 tangentOffset1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2)
-    {
-        Vector2 d = P2 - P1;
-
-        bool sameOrientation = (orientation1 && orientation2) || !(orientation1 || orientation2);
-
-        float r = sameOrientation ? r2 - r1 : r1 + r2 - chainWidth;
-
-        if (d.magnitude <= r)
-        {
-            //tangentOffset1 = Vector2.zero;
-            //tangentOffset2 = Vector2.zero;
-            //return;
-            throw new System.Exception();
-        }
-
-        if (sameOrientation)
-        {
-            if (r1 == r2)
-            {
-                d = Vector2.Perpendicular(d.normalized) * r1;
-
-                if(!orientation1)
-                {
-                    d = -d;
-                }
-
-                tangentOffset1 = d;
-                tangentOffset2 = d;
-            }
-            else
-            {
-                Vector2 tangentIntersection = (P2 * (r1 - chainWidth/2) - P1 * (r2 - chainWidth/2)) / (r1 - r2);
-
-                TangentPointCircle(tangentIntersection, P1, r1, !orientation1, out tangentOffset1);
-                TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2);
-            }
-        }
-        else
-        {
-            Vector2 tangentIntersection = (P2*(r1 - chainWidth/2) + P1*(r2 - chainWidth/2)) / (r1 + r2 - chainWidth);
-
-            TangentPointCircle(tangentIntersection, P1, r1, orientation1, out tangentOffset1);
-            TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2);
-        }
     }
 
     float CircleDistance(Vector2 p1, Vector2 p2, bool orientation, float radious)
@@ -528,28 +456,6 @@ public class CableJoint : CableBase
         newNode.linkType = LinkType.Rolling;
 
         return true;
-    }
-
-    bool GetOrientation(RaycastHit2D hit, CableMeshInteraction CMesh)
-    {
-        Vector2 chainPoint = (((Vector2)tail.transform.position + tail.tangentOffsetHead) - ((Vector2)this.transform.position + this.tangentOffsetTail)) * hit.fraction;
-
-        Vector2 chainPointPrev = ((tail.prevPos + tail.prevTangentHead) - (this.prevPos + this.prevTangentTail)) * hit.fraction;
-
-        Vector2 hitPointPrev = hit.point;
-
-        if (CMesh is ChainMeshDynamic)
-        {
-            Vector2 hitOffset = hit.point - (Vector2)CMesh.transform.position;
-
-            hitPointPrev = ((ChainMeshDynamic)CMesh).prevRot * (hitOffset + (Vector2)((ChainMeshDynamic)CMesh).prevPos);
-        }
-
-        Vector2 hitDirection = (chainPoint - chainPointPrev) - (hit.point - hitPointPrev);
-
-        print(hitDirection.normalized);
-
-        return Vector2.SignedAngle((Vector2)tail.transform.position - (Vector2)this.transform.position, hitDirection) > 0;
     }
 
     void NodeRemover()

@@ -67,18 +67,18 @@ public class BoxPulley : CableMeshInterface
         Vector2[] points = { topRight, topLeft, bottomleft, bottomRight };
 
         int highestIndex = cache.polygonIndex;
-        if (highestIndex < 0 || highestIndex >= data.points.Length)
+        if (highestIndex < 0 || highestIndex >= points.Length)
         {
             highestIndex = 0;
         }
-        Vector2 highestVector = (Vector2)data.transform.position + data.offset + data.points[highestIndex] - point;
+        Vector2 highestVector = (Vector2)data.transform.position + data.offset + points[highestIndex] - point;
 
         int currentIndex = highestIndex + 1;
-        if (currentIndex >= data.points.Length)
+        if (currentIndex >= points.Length)
         {
             currentIndex = 0;
         }
-        Vector2 currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
+        Vector2 currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
 
         float angle = Vector2.SignedAngle(highestVector, currentVector);
 
@@ -87,9 +87,9 @@ public class BoxPulley : CableMeshInterface
             currentIndex = highestIndex - 1;
             if (currentIndex < 0)
             {
-                currentIndex = data.points.Length - 1;
+                currentIndex = points.Length - 1;
             }
-            currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
+            currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
 
             angle = Vector2.SignedAngle(highestVector, currentVector);
 
@@ -101,9 +101,9 @@ public class BoxPulley : CableMeshInterface
                 currentIndex--;
                 if (currentIndex < 0)
                 {
-                    currentIndex = data.points.Length - 1;
+                    currentIndex = points.Length - 1;
                 }
-                currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
+                currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
 
                 angle = Vector2.SignedAngle(highestVector, currentVector);
             }
@@ -116,16 +116,21 @@ public class BoxPulley : CableMeshInterface
                 highestVector = currentVector;
 
                 currentIndex++;
-                if (currentIndex >= data.points.Length)
+                if (currentIndex >= points.Length)
                 {
                     currentIndex = 0;
                 }
-                currentVector = (Vector2)data.transform.position + data.offset + data.points[currentIndex] - point;
+                currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
             }
         }
 
         cache.polygonIndex = highestIndex;
         return highestVector + point;
+    }
+
+    public override float ShapeSurfaceDistance(Vector2 prevTangent, Vector2 currentTangent, bool orientation)
+    {
+        throw new System.NotImplementedException();
     }
 
     public override void CreateChainCollider(float chainWidth)
