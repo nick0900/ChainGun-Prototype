@@ -102,16 +102,15 @@ public class CableJoint : CableBase
 
         if (tail.linkType != LinkType.Rolling)
         {
-            TangentPointCircle(tail.transform.position, this.transform.position, this.pulleyRadius, this.orientation, out this.tOffTail);
+            //TangentPointCircle(tail.transform.position, this.transform.position, this.pulleyRadius, this.orientation, out this.tOffTail);
         }
         if (head.linkType == LinkType.Rolling)
         {
-            TangentCircleCircle(head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.node.tOffTail,
-                                this.transform.position, this.pulleyRadius, this.orientation, out this.tOffHead);
+            //TangentCircleCircle(head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.node.tOffTail, this.transform.position, this.pulleyRadius, this.orientation, out this.tOffHead);
         }
         else
         {
-            TangentPointCircle(head.transform.position, this.transform.position, this.pulleyRadius, !this.orientation, out this.tOffHead);
+            //TangentPointCircle(head.transform.position, this.transform.position, this.pulleyRadius, !this.orientation, out this.tOffHead);
         }
 
         Vector2 currentTTail = (this.transform.rotation * Quaternion.Inverse(previousRotation)) * this.tangentOffsetTail;
@@ -319,22 +318,20 @@ public class CableJoint : CableBase
 
             if (newNode.GetTail().linkType == LinkType.Rolling)
             {
-                TangentCircleCircle(newNode.transform.position, newNode.pulleyRadius, newNode.orientation, out newNode.tangentOffsetTail,
-                                    newNode.tail.transform.position, newNode.tail.node.pulleyRadius, newNode.tail.node.orientation, out newNode.tail.tangentOffsetHead);
+                //TangentCircleCircle(newNode.transform.position, newNode.pulleyRadius, newNode.orientation, out newNode.tangentOffsetTail, newNode.tail.transform.position, newNode.tail.node.pulleyRadius, newNode.tail.node.orientation, out newNode.tail.tangentOffsetHead);
             }
             else
             {
-                TangentPointCircle(newNode.tail.transform.position, newNode.transform.position, newNode.pulleyRadius, newNode.orientation, out newNode.tangentOffsetTail);
+                //TangentPointCircle(newNode.tail.transform.position, newNode.transform.position, newNode.pulleyRadius, newNode.orientation, out newNode.tangentOffsetTail);
             }
 
             if (this.linkType == LinkType.Rolling)
             {
-                TangentCircleCircle(this.transform.position, this.pulleyRadius, this.orientation, out this.tangentOffsetTail,
-                                    newNode.transform.position, newNode.pulleyRadius, newNode.orientation, out newNode.tangentOffsetHead);
+                //TangentCircleCircle(this.transform.position, this.pulleyRadius, this.orientation, out this.tangentOffsetTail, newNode.transform.position, newNode.pulleyRadius, newNode.orientation, out newNode.tangentOffsetHead);
             }
             else
             {
-                TangentPointCircle(this.transform.position, newNode.transform.position, newNode.pulleyRadius, !newNode.orientation, out newNode.tangentOffsetHead);
+                //TangentPointCircle(this.transform.position, newNode.transform.position, newNode.pulleyRadius, !newNode.orientation, out newNode.tangentOffsetHead);
             }
 
             newNode.storedLength = 0;
@@ -360,8 +357,8 @@ public class CableJoint : CableBase
 
     bool ConfigurePulley(RaycastHit2D hit, out CableJoint newNode)
     {
-        //bool orientation = Vector2.SignedAngle((Vector2)tail.transform.position - (Vector2)this.transform.position + this.tangentOffsetTail, (Vector2)hit.transform.position + hit.offset - (Vector2)this.transform.position - this.tangentOffsetTail) < 0;
         newNode = null;
+        /*
         Collider2D coll = hit.collider;
 
         if (!CableEditorMenu.CMD.dictionary.ContainsKey(coll))
@@ -411,20 +408,6 @@ public class CableJoint : CableBase
 
             Vector2 tangent;
 
-            /*
-            if (!FindVertex(CMesh, onSame, ref orientation, out tangent, coll.transform.position, coll.transform.rotation))
-            {
-                return false;
-            }
-            
-
-            newNode = ((GameObject)Instantiate(nodePrefab, tangent, Quaternion.identity)).GetComponent<NodeFunctionality>();
-
-            newNode.pulleyRadius = chainWidth/2 + 0.001f;
-
-            newNode.CMesh = CMesh;
-            newNode.CMvertex = tangent;
-            */
         }
 
         newNode.orientation = !orientation;
@@ -456,6 +439,8 @@ public class CableJoint : CableBase
         newNode.linkType = LinkType.Rolling;
 
         return true;
+        */
+        return false;
     }
 
     void NodeRemover()
@@ -481,17 +466,16 @@ public class CableJoint : CableBase
         {
             if (head.linkType == LinkType.Rolling)
             {
-                TangentCircleCircle(head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.tangentOffsetTail,
-                                    tail.transform.position, tail.node.pulleyRadius, tail.node.orientation, out tail.tangentOffsetHead);
+                //TangentCircleCircle(head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.tangentOffsetTail, tail.transform.position, tail.node.pulleyRadius, tail.node.orientation, out tail.tangentOffsetHead);
             }
             else
             {
-                TangentPointCircle(head.transform.position, tail.transform.position, tail.node.pulleyRadius, !tail.node.orientation, out tail.tangentOffsetHead);
+                //TangentPointCircle(head.transform.position, tail.transform.position, tail.node.pulleyRadius, !tail.node.orientation, out tail.tangentOffsetHead);
             }
         }
         else if(head.linkType == LinkType.Rolling)
         {
-            TangentPointCircle(tail.transform.position, head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.tangentOffsetTail);
+            //TangentPointCircle(tail.transform.position, head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.tangentOffsetTail);
         }
 
         head.GetComponent<CableJoint>().InitializeNodes();

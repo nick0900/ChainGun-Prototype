@@ -4,25 +4,46 @@ using UnityEngine;
 
 public class BoxPulley : CableMeshInterface
 {
-    [SerializeField] BoxCollider2D data = null;
+    [SerializeField] BoxCollider2D pulleyCollider = null;
 
     public override CMPrimitives ChainMeshPrimitiveType { get { return CMPrimitives.polygon; } }
 
-    public override bool MeshGenerated { get { return data != null; } }
+    public override bool MeshGenerated { get { return pulleyCollider != null; } }
 
     public override bool Errornous { get { return !MeshGenerated; } }
 
+    public override Vector2 PulleyCentreGeometrical
+    {
+        get
+        {
+            return pulleyCollider.transform.TransformPoint(pulleyCollider.offset);
+        }
+    }
+
+    public override Rigidbody2D PulleyAttachedRigidBody
+    {
+        get
+        {
+            return pulleyCollider.attachedRigidbody;
+        }
+    }
+
+    protected override Vector2 PulleyToWorldTransform(Vector2 point)
+    {
+        return pulleyCollider.transform.TransformPoint(point + pulleyCollider.offset);
+    }
+
     protected override void SetupMesh()
     {
-        data = GetComponent<BoxCollider2D>();
+        pulleyCollider = GetComponent<BoxCollider2D>();
     }
 
-    public override void RemoveChainMesh()
+    protected override void RemoveCableMesh()
     {
-        data = null;
+        pulleyCollider = null;
     }
 
-    public override bool PrintErrors()
+    protected override bool PrintErrors()
     {
         bool error = false;
 
@@ -35,7 +56,7 @@ public class BoxPulley : CableMeshInterface
         return error;
     }
 
-    public override bool CorrectErrors()
+    protected override bool CorrectErrors()
     {
         bool errorsFixed = true;
 
@@ -51,86 +72,119 @@ public class BoxPulley : CableMeshInterface
 
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
-        Vector2 tailDirection = tailPrevious - CenterWorldPosition(data);
-        Vector2 headDirection = headPrevious - CenterWorldPosition(data);
+        Vector2 tailDirection = tailPrevious;
+        Vector2 headDirection = headPrevious;
 
         return Vector2.SignedAngle(tailDirection, headDirection) > 0;
     }
 
-    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, ref ChainJointCache cache)
+    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, out int vertex)
     {
-        Vector2 topRight = this.transform.TransformPoint(new Vector2(data.size.x, data.size.y));
-        Vector2 topLeft = this.transform.TransformPoint(new Vector2(-data.size.x, data.size.y));
-        Vector2 bottomleft = this.transform.TransformPoint(new Vector2(-data.size.x, -data.size.y));
-        Vector2 bottomRight = this.transform.TransformPoint(new Vector2(data.size.x, -data.size.y));
+        Vector2 topRight = this.transform.TransformPoint(new Vector2(pulleyCollider.size.x, pulleyCollider.size.y));
+        Vector2 topLeft = this.transform.TransformPoint(new Vector2(-pulleyCollider.size.x, pulleyCollider.size.y));
+        Vector2 bottomleft = this.transform.TransformPoint(new Vector2(-pulleyCollider.size.x, -pulleyCollider.size.y));
+        Vector2 bottomRight = this.transform.TransformPoint(new Vector2(pulleyCollider.size.x, -pulleyCollider.size.y));
 
-        Vector2[] points = { topRight, topLeft, bottomleft, bottomRight };
+        Vector2[] corners = {topRight, topLeft, bottomleft, bottomRight};
 
-        int highestIndex = cache.polygonIndex;
-        if (highestIndex < 0 || highestIndex >= points.Length)
+        Vector2 squareRightVector = PulleyToWorldTransform(Vector2.right) - PulleyCentreGeometrical;
+        Vector2 squarePointVector = point - PulleyCentreGeometrical;
+
+        float angle = Vector2.SignedAngle(squarePointVector, squareRightVector);
+        if (angle < 0)
         {
-            highestIndex = 0;
+            angle = -angle + 180.0f;
         }
-        Vector2 highestVector = (Vector2)data.transform.position + data.offset + points[highestIndex] - point;
 
-        int currentIndex = highestIndex + 1;
-        if (currentIndex >= points.Length)
+        int squareSector = ((int)angle) / 45;
+
+        angle -= squareSector * 45.0f;
+
+        vertex = squareSector / 2;
+
+        if (squareSector % 2 == 0)
         {
-            currentIndex = 0;
-        }
-        Vector2 currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
-
-        float angle = Vector2.SignedAngle(highestVector, currentVector);
-
-        if (((angle == 0) && (currentVector.magnitude < highestVector.magnitude)) || ((angle < 0) == orientation))
-        {
-            currentIndex = highestIndex - 1;
-            if (currentIndex < 0)
+            if (!orientation)
             {
-                currentIndex = points.Length - 1;
+                vertex--;
             }
-            currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
-
-            angle = Vector2.SignedAngle(highestVector, currentVector);
-
-            while (((angle == 0) && (currentVector.magnitude < highestVector.magnitude)) || ((angle < 0) == orientation))
+            else
             {
-                highestIndex = currentIndex;
-                highestVector = currentVector;
+                //The angle where both corners of the square sector is tangent to the point
+                //first needs to make sure ratio is within the range of arcsin
+                float tippingAngle = (squareSector % 4 == 0) ? pulleyCollider.size.y : pulleyCollider.size.x;
 
-                currentIndex--;
-                if (currentIndex < 0)
+                //if the ratio is greater than one, then the point is too close for one side to be tangent or the point is potentially inside square.
+                //Make sure before calling this function the point is not within the square
+                if ((tippingAngle < 1) && (angle > Mathf.Asin(tippingAngle)))
                 {
-                    currentIndex = points.Length - 1;
+                    vertex++;
                 }
-                currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
-
-                angle = Vector2.SignedAngle(highestVector, currentVector);
             }
         }
         else
         {
-            while (((angle == 0) && (currentVector.magnitude < highestVector.magnitude)) || ((angle < 0) == orientation))
+            if (orientation)
             {
-                highestIndex = currentIndex;
-                highestVector = currentVector;
+                vertex++;
+            }
+            else
+            {
+                //The angle where both corners of the square sector is tangent to the point
+                //first needs to make sure ratio is within the range of arcsin
+                float tippingAngle = (squareSector % 4 == 3) ? pulleyCollider.size.y : pulleyCollider.size.x;
 
-                currentIndex++;
-                if (currentIndex >= points.Length)
+                //if the ratio is greater than one, then the point is too close for one side to be tangent or the point is potentially inside square.
+                //Make sure before calling this function the point is not within the square
+                if ((tippingAngle < 1) && (angle < Mathf.Asin(tippingAngle)))
                 {
-                    currentIndex = 0;
+                    vertex--;
                 }
-                currentVector = (Vector2)data.transform.position + data.offset + points[currentIndex] - point;
             }
         }
 
-        cache.polygonIndex = highestIndex;
-        return highestVector + point;
+        vertex = vertex % 4;
+
+        return corners[vertex];
     }
 
-    public override float ShapeSurfaceDistance(Vector2 prevTangent, Vector2 currentTangent, bool orientation)
+    public override float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation)
     {
-        throw new System.NotImplementedException();
+        if (prevVertex == currentVertex) return 0;
+
+        if (!orientation)
+        {
+            int aux = prevVertex;
+            prevVertex = currentVertex;
+            currentVertex = aux;
+        }
+
+        if ((prevVertex + 1) % 4 == currentVertex)
+        {
+            if (prevVertex % 2 == 0)
+            {
+                return pulleyCollider.size.x * 2;
+            }
+            else
+            {
+                return pulleyCollider.size.y * 2;
+            }
+        }
+
+        if ((prevVertex - 1) % 4 == currentVertex)
+        {
+            if (prevVertex % 2 == 0)
+            {
+                return -pulleyCollider.size.y * 2;
+            }
+            else
+            {
+                return -pulleyCollider.size.x * 2;
+            }
+        }
+
+        print("you did it, you broke the game!!!!");
+        return pulleyCollider.size.x + pulleyCollider.size.y;
     }
 
     public override void CreateChainCollider(float chainWidth)

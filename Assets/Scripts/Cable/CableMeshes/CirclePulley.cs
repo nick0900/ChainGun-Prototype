@@ -30,7 +30,7 @@ public class CirclePulley : CableMeshInterface
     {
         get 
         {
-            return pulleyCollider.attachedRigidbody.worldCenterOfMass;
+            return pulleyCollider.transform.TransformPoint(pulleyCollider.offset);
         }
     }
 
@@ -39,11 +39,11 @@ public class CirclePulley : CableMeshInterface
         return pulleyCollider.transform.TransformPoint(point + pulleyCollider.offset);
     }
 
-    public override Vector2 PulleyCentreOfMass
+    public override Rigidbody2D PulleyAttachedRigidBody
     {
         get
         {
-            return pulleyCollider.transform.TransformPoint(pulleyCollider.offset);
+            return pulleyCollider.attachedRigidbody;
         }
     }
 
@@ -51,12 +51,12 @@ public class CirclePulley : CableMeshInterface
     {
         pulleyCollider = GetComponent<CircleCollider2D>();
     }
-    public override void RemoveChainMesh()
+    protected override void RemoveCableMesh()
     {
         pulleyCollider = null;
     }
 
-    public override bool PrintErrors()
+    protected override bool PrintErrors()
     {
         bool error = false;
 
@@ -68,7 +68,7 @@ public class CirclePulley : CableMeshInterface
         return error;
     }
 
-    public override bool CorrectErrors()
+    protected override bool CorrectErrors()
     {
         bool errorsFixed = true;
 
@@ -185,16 +185,16 @@ public class CirclePulley : CableMeshInterface
 
     public override float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation)
     {
-        if (orientation)
+        if (!orientation)
         {
             Vector2 aux = prevTangent;
             prevTangent = currentTangent;
             currentTangent = aux;
         }
 
-        float theta = Mathf.Atan2(prevTangent.x * currentTangent.y - prevTangent.y * currentTangent.x, prevTangent.x * currentTangent.x + prevTangent.y * currentTangent.y);
+        float degrees = Vector2.SignedAngle(prevTangent, currentTangent);
 
-        return pulleyCollider.radius * theta;
+        return pulleyCollider.radius * degrees * Mathf.Deg2Rad;
     }
 
     public override void CreateChainCollider(float cableWidth)

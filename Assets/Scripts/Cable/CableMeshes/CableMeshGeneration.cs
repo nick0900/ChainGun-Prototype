@@ -14,10 +14,18 @@ abstract public class CableMeshGeneration : MonoBehaviour
     abstract public bool Errornous { get; }
 
     [ContextMenu("Check Errors")]
-    abstract public bool PrintErrors();
+    public bool PrintErrorMenu()
+    {
+        return PrintErrors();
+    }
+    abstract protected bool PrintErrors();
 
     [ContextMenu("Correct Errors")]
-    abstract public bool CorrectErrors();
+    public bool CorrectErrorMenu()
+    {
+        return CorrectErrors();
+    }
+    abstract protected bool CorrectErrors();
 
     [ContextMenu("Generate Chain Mesh")]
     public void GenerateChainMesh()
@@ -38,11 +46,15 @@ abstract public class CableMeshGeneration : MonoBehaviour
     {
         if (protectSettings) return;
         submesh = true;
-        PrintErrors();
+        GenerateSubMesh(root);
     }
 
     abstract protected void SetupMesh();
 
     [ContextMenu("Remove Chain Mesh")]
-    abstract public void RemoveChainMesh();
+    public void RemoveCableMeshMenu()
+    {
+        RemoveCableMesh();
+    }
+    abstract protected void RemoveCableMesh();
 }

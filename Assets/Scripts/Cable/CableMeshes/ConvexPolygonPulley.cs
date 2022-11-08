@@ -25,7 +25,7 @@ public class ConvexPolygonPulley : CableMeshInterface
     {
         get
         {
-            return pulleyCollider.attachedRigidbody.worldCenterOfMass;
+            return pulleyCollider.transform.TransformPoint(pulleyCollider.offset);
         }
     }
 
@@ -34,11 +34,11 @@ public class ConvexPolygonPulley : CableMeshInterface
         return pulleyCollider.transform.TransformPoint(point + pulleyCollider.offset);
     }
 
-    public override Vector2 PulleyCentreOfMass
+    public override Rigidbody2D PulleyAttachedRigidBody
     {
         get
         {
-            return pulleyCollider.transform.TransformPoint(pulleyCollider.offset);
+            return pulleyCollider.attachedRigidbody;
         }
     }
 
@@ -55,14 +55,14 @@ public class ConvexPolygonPulley : CableMeshInterface
         UpdatePolygonData();
     }
 
-    public override void RemoveChainMesh()
+    protected override void RemoveCableMesh()
     {
         polygonData = null;
 
         pulleyCollider = null;
     }
 
-    public override bool PrintErrors()
+    protected override bool PrintErrors()
     {
         bool error = false;
 
@@ -95,7 +95,7 @@ public class ConvexPolygonPulley : CableMeshInterface
         return error;
     }
 
-    public override bool CorrectErrors()
+    protected override bool CorrectErrors()
     {
         bool errorsFixed = true;
 
@@ -316,26 +316,53 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public override float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation)
     {
-        float distance = 0.0f;
-        
-        if (orientation)
+        if (prevVertex == currentVertex) return 0.0f;
+
+        if (!orientation)
         {
             int aux = prevVertex;
             prevVertex = currentVertex;
             currentVertex = aux;
         }
 
-        while (prevVertex != currentVertex)
+        float firstDistance = 0.0f;
+        float secondDistance = 0.0f;
+
+        bool firstAccumulate = true;
+
+        int index = prevVertex;
+        for (int i = 0; i < polygonData.Count - 1; i++)
         {
-            distance += polygonData[prevVertex].edgeLength;
-            prevVertex++;
-            if (prevVertex >= polygonData.Count - 1)
+            if (firstAccumulate)
             {
-                prevVertex = 0;
+                firstDistance += polygonData[index].edgeLength;
+
+                index++;
+                if (index >= polygonData.Count)
+                {
+                    index = 0;
+                }
+
+                if (index >= currentVertex)
+                {
+                    firstAccumulate = false;
+                }
+            }
+            else
+            {
+                secondDistance += polygonData[index].edgeLength;
+
+                index++;
+                if (index >= polygonData.Count)
+                {
+                    index = 0;
+                }
             }
         }
 
-        return distance;
+        if (firstDistance > secondDistance) return -secondDistance;
+
+        return firstDistance;
     }
 
     public override void CreateChainCollider(float chainWidth)

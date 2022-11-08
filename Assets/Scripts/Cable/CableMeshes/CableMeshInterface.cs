@@ -18,8 +18,8 @@ abstract public class CableMeshInterface : CableMeshGeneration
     //transformation from a local point on the pulley to world space
     abstract protected Vector2 PulleyToWorldTransform(Vector2 point);
 
-    //global position of pulley physics current centre of mass
-    abstract public Vector2 PulleyCentreOfMass { get; }
+    //attached rigid body
+    abstract public Rigidbody2D PulleyAttachedRigidBody { get; }
 
 
     abstract public CMPrimitives ChainMeshPrimitiveType { get; }

@@ -8,7 +8,7 @@ public class CableEditorMenu : MonoBehaviour
 {
 
     [MenuItem("Cablesystem/GenerateAllCM")]
-    public void GenerateAllCM()
+    static public void GenerateAllCM()
     {
         int count = 0;
         CableMeshGeneration[] meshes = Resources.FindObjectsOfTypeAll<CableMeshGeneration>();
@@ -26,7 +26,7 @@ public class CableEditorMenu : MonoBehaviour
     }
 
     [MenuItem("Cablesystem/RegenerateAllCM")]
-    public void RegenreateAllCM()
+    static public void RegenreateAllCM()
     {
         int count = 0;
         CableMeshGeneration[] meshes = Resources.FindObjectsOfTypeAll<CableMeshGeneration>();
@@ -43,14 +43,14 @@ public class CableEditorMenu : MonoBehaviour
     }
 
     [MenuItem("Cablesystem/CheckErrors")]
-    public void CheckErrors()
+    static public void CheckErrors()
     {
         int count = 0;
         CableMeshGeneration[] meshes = Resources.FindObjectsOfTypeAll<CableMeshGeneration>();
 
         foreach (CableMeshGeneration mesh in meshes)
         {
-            if (mesh.PrintErrors())
+            if (mesh.PrintErrorMenu())
             {
                 count++;
             }
@@ -58,8 +58,8 @@ public class CableEditorMenu : MonoBehaviour
         print(count + " errors detected");
     }
 
-    [MenuItem("Cablesystem/Erroneous")]
-    public void CorrectErroneous()
+    [MenuItem("Cablesystem/CorrectErroneous")]
+    static public void CorrectErroneous()
     {
         int errors = 0;
         int fixedErrors = 0;
@@ -69,7 +69,7 @@ public class CableEditorMenu : MonoBehaviour
         {
             if (mesh.Errornous && !mesh.ProtectSettings)
             {
-                if (mesh.CorrectErrors())
+                if (mesh.CorrectErrorMenu())
                 {
                     fixedErrors++;
                 }
@@ -79,8 +79,8 @@ public class CableEditorMenu : MonoBehaviour
         print(fixedErrors + "/" + errors + " errors fixed");
     }
 
-    [MenuItem("Cablesystem/Erroneous")]
-    public void CleanErroneous()
+    [MenuItem("Cablesystem/RemoveErroneous")]
+    static public void CleanErroneous()
     {
         int count = 0;
         CableMeshGeneration[] meshes = Resources.FindObjectsOfTypeAll<CableMeshGeneration>();
@@ -89,15 +89,15 @@ public class CableEditorMenu : MonoBehaviour
         {
             if (mesh.Errornous && !mesh.ProtectSettings)
             {
-                mesh.RemoveChainMesh();
+                mesh.RemoveCableMeshMenu();
                 count++;
             }
         }
         print(count + " chain meshes removed");
     }
 
-    [MenuItem("Cablesystem/AllCM")]
-    public void ClearAllCM()
+    [MenuItem("Cablesystem/RemoveAllCM")]
+    static public void ClearAllCM()
     {
         CableMeshGeneration[] meshes = Resources.FindObjectsOfTypeAll<CableMeshGeneration>();
 
@@ -105,7 +105,7 @@ public class CableEditorMenu : MonoBehaviour
         {
             if (!mesh.ProtectSettings)
             {
-                mesh.RemoveChainMesh();
+                mesh.RemoveCableMeshMenu();
             }
         }
     }
