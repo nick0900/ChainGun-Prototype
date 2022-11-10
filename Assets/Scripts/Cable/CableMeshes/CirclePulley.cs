@@ -8,9 +8,6 @@ public class CirclePulley : CableMeshInterface
 
     [SerializeField] CircleCollider2D pulleyCollider = null;
 
-    private Vector2 previousPosition = Vector2.zero;
-    private Vector2 currentPosition = Vector2.zero;
-
     public Vector2 WorldPosition { get { return PulleyCentreGeometrical; } }
     public float Radius { get { return pulleyCollider.radius; } }
 
@@ -84,14 +81,12 @@ public class CirclePulley : CableMeshInterface
     private void Awake()
     {
         previousPosition = PulleyCentreGeometrical;
-        currentPosition = PulleyCentreGeometrical;
     }
     private void FixedUpdate()
     {
         if (pulleyCollider.attachedRigidbody.bodyType != RigidbodyType2D.Static)
         {
-            previousPosition = currentPosition;
-            currentPosition = PulleyCentreGeometrical;
+            previousPosition = PulleyCentreGeometrical;
         }
     }
 

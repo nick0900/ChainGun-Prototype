@@ -5,6 +5,24 @@ using UnityEngine;
 [System.Serializable]
 abstract public class CableMeshInterface : CableMeshGeneration
 {
+    protected Vector2 previousPosition1 = Vector2.zero;
+    protected Vector2 previousPosition2 = Vector2.zero;
+
+    public Vector2 PreviousPosition(bool alternator)
+    {
+
+    }
+
+    bool InternalAlternator = false;
+
+    private void FixedUpdate()
+    {
+        previousPosition2 = previousPosition1;
+        previousPosition1 = PulleyCentreGeometrical;
+
+        InternalAlternator = !InternalAlternator;
+    }
+
     public enum CMPrimitives
     {
         Point,

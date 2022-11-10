@@ -28,12 +28,6 @@ abstract public class CableBase : MonoBehaviour
 
     [HideInInspector] public Vector2 tangentOffsetTail;
 
-    [HideInInspector] public Vector2 prevTangentHead;
-
-    [HideInInspector] public Vector2 prevTangentTail;
-
-    [HideInInspector] public Vector2 prevPos;
-
     public enum LinkType
     {
         Rolling,
@@ -54,18 +48,6 @@ abstract public class CableBase : MonoBehaviour
     public void ChainSolve(CableBase start)
     {
         start.node.CableSegmentSolve();
-        if (start.head != null)
-        {
-            ChainSolve(start.head);
-        }
-    }
-
-    public void PositionSave(CableBase start)
-    {
-        prevPos = this.transform.position;
-        prevTangentHead = this.tangentOffsetHead;
-        prevTangentTail = this.tangentOffsetTail;
-        
         if (start.head != null)
         {
             ChainSolve(start.head);

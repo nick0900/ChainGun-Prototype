@@ -40,11 +40,12 @@ public class CableAnchor : CableBase
 
         ChainUpdate(head);
 
+        /*
         for (int i = 0; i < 10; i++)
         {
             ChainSolve(head);
         }
-        PositionSave(head);
+        */
     }
 
     private void OnAnimatorIK(int layerIndex)

@@ -4,17 +4,12 @@ using UnityEngine;
 
 public class CableHitbox : MonoBehaviour
 {
-    private CableJoint chainNode;
+    private CableJoint cableNode;
 
     [SerializeField] BoxCollider2D box;
 
-    public CableJoint ChainNode
+    public CableJoint CableNode
     {
-        set { chainNode = value; }
-    }
-
-    public void Transmit(Collider2D hit)
-    {
-        //chainNode.NodeAdder(hit);
+        set { cableNode = value; }
     }
 }

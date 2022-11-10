@@ -16,9 +16,6 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     private List<VertexData> polygonData = null;
 
-    private Vector2 previousPosition = Vector2.zero;
-    private Vector2 currentPosition = Vector2.zero;
-
     public override CMPrimitives ChainMeshPrimitiveType { get { return CMPrimitives.polygon; } }
 
     public override Vector2 PulleyCentreGeometrical
@@ -266,19 +263,10 @@ public class ConvexPolygonPulley : CableMeshInterface
     private void Awake()
     {
         previousPosition = PulleyCentreGeometrical;
-        currentPosition = PulleyCentreGeometrical;
 
         if (MeshGenerated)
         {
             UpdatePolygonData();
-        }
-    }
-    private void FixedUpdate()
-    {
-        if (pulleyCollider.attachedRigidbody.bodyType != RigidbodyType2D.Static)
-        {
-            previousPosition = currentPosition;
-            currentPosition = PulleyCentreGeometrical;
         }
     }
 

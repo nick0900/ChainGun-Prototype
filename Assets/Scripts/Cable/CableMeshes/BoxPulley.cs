@@ -70,15 +70,28 @@ public class BoxPulley : CableMeshInterface
         return errorsFixed;
     }
 
-    public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
+    private void Awake()
     {
-        Vector2 tailDirection = tailPrevious;
-        Vector2 headDirection = headPrevious;
-
-        return Vector2.SignedAngle(tailDirection, headDirection) > 0;
+        previousPosition = PulleyCentreGeometrical;
     }
 
-    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, out int vertex)
+    private void FixedUpdate()
+    {
+        if (pulleyCollider.attachedRigidbody.bodyType != RigidbodyType2D.Static)
+        {
+            previousPosition = PulleyCentreGeometrical;
+        }
+    }
+
+    public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
+    {
+        Vector2 cableVector = headPrevious - tailPrevious;
+        Vector2 centreVector = previousPosition - tailPrevious;
+
+        return Vector2.SignedAngle(cableVector, centreVector) >= 0;
+    }
+
+    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float cableWidth, out int vertex)
     {
         Vector2 topRight = this.transform.TransformPoint(new Vector2(pulleyCollider.size.x, pulleyCollider.size.y));
         Vector2 topLeft = this.transform.TransformPoint(new Vector2(-pulleyCollider.size.x, pulleyCollider.size.y));
@@ -145,7 +158,9 @@ public class BoxPulley : CableMeshInterface
 
         vertex = vertex % 4;
 
-        return corners[vertex];
+        Vector2 tangent = PulleyToWorldTransform(corners[vertex]) - PulleyCentreGeometrical;
+
+        return tangent + tangent.normalized * cableWidth / 2;
     }
 
     public override float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation)

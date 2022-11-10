@@ -52,7 +52,7 @@ public class CableJoint : CableBase
 
     private double epsilon = 0.000001;
 
-    public CableMeshInterface CableMesh;
+    public CableMeshInterface Pulley;
 
 
     void Awake()
@@ -71,7 +71,7 @@ public class CableJoint : CableBase
         }
 
         triggerBox = Instantiate(chainTriggerPrefab, this.transform.position, this.transform.rotation).transform;
-        triggerBox.GetComponent<CableHitbox>().ChainNode = this;
+        triggerBox.GetComponent<CableHitbox>().CableNode = this;
 
         triggerWidth = width;
         if (triggerWidth < 0.001f)
@@ -116,35 +116,21 @@ public class CableJoint : CableBase
         Vector2 currentTTail = (this.transform.rotation * Quaternion.Inverse(previousRotation)) * this.tangentOffsetTail;
         Vector2 currentTHead = (this.transform.rotation * Quaternion.Inverse(previousRotation)) * this.tangentOffsetHead;
 
-        float distTail = CircleDistance(currentTTail, this.tOffTail, this.orientation, this.pulleyRadius);
-        float distHead = CircleDistance(currentTHead, this.tOffHead, this.orientation, this.pulleyRadius);
+        //float distTail = CircleDistance(currentTTail, this.tOffTail, this.orientation, this.pulleyRadius);
+        //float distHead = CircleDistance(currentTHead, this.tOffHead, this.orientation, this.pulleyRadius);
 
         previousRotation = this.transform.rotation;
 
         // Update stored lengths:
-        this.storedLength += distTail;
-        this.storedLength -= distHead;
+        //this.storedLength += distTail;
+        //this.storedLength -= distHead;
 
         // Update rest lengths:
-        this.restLength -= distTail;
-        head.node.restLength += distHead;
+        //this.restLength -= distTail;
+        //head.node.restLength += distHead;
 
         this.tangentOffsetTail = this.tOffTail;
         this.tangentOffsetHead = this.tOffHead;
-    }
-
-    float CircleDistance(Vector2 p1, Vector2 p2, bool orientation, float radious)
-    {
-        if (orientation)
-        {
-            Vector2 aux = p1;
-            p1 = p2;
-            p2 = aux;
-        }
-
-        float theta = Mathf.Atan2(p1.x * p2.y - p1.y * p2.x, p1.x * p2.x + p1.y * p2.y);
-
-        return radious * theta;
     }
 
     void FrictionUpdate()
@@ -312,7 +298,7 @@ public class CableJoint : CableBase
 
         CableJoint newNode;
 
-        if (ConfigurePulley(hit, out newNode))
+        if (ConfigurePulley(hit.collider.GetComponent<CableMeshInterface>(), out newNode))
         {
             AddBack(newNode);
 
@@ -355,19 +341,16 @@ public class CableJoint : CableBase
         }
     }
 
-    bool ConfigurePulley(RaycastHit2D hit, out CableJoint newNode)
+    bool ConfigurePulley(CableMeshInterface hitPulley, out CableJoint newNode)
     {
         newNode = null;
-        /*
-        Collider2D coll = hit.collider;
 
-        if (!CableEditorMenu.CMD.dictionary.ContainsKey(coll))
-        {
-            return false;
-        }
-        CableMeshInteraction CMesh = CableEditorMenu.CMD.dictionary[coll];
+        //this is only called during hit detection phase. being after unity physics update and before new tangent offsets are calculated
 
-        bool orientation = GetOrientation(hit, CMesh);
+        //....................................TO DO!!!!!............................//
+        //make previous pulley position reachable through cablemeshinteraction. Or make the orientation functions add the previous position internally
+
+        bool orientation = hitPulley.Orientation(tail.prevTangentOffsetHead + hitPulley.PulleyCentreGeometrical, this.prevTangentOffsetTail + hitPulley.PulleyCentreGeometrical);
 
         print(orientation);
 
@@ -386,28 +369,6 @@ public class CableJoint : CableBase
             newNode.previousPulley = circleColl;
 
             newNode.pulleyRadius = circleColl.radius + chainWidth / 2;
-        }
-        else
-        {
-            bool onSame = this.CMesh == CMesh;
-
-            if (onSame)
-            {
-                orientation = this.orientation;
-            }
-            else if (tail.node != null)
-            {
-                onSame = tail.node.CMesh == CMesh;
-                if(onSame)
-                {
-                    orientation = tail.node.orientation;
-                }
-            }
-
-            orientation = !orientation;
-
-            Vector2 tangent;
-
         }
 
         newNode.orientation = !orientation;
@@ -439,8 +400,6 @@ public class CableJoint : CableBase
         newNode.linkType = LinkType.Rolling;
 
         return true;
-        */
-        return false;
     }
 
     void NodeRemover()
