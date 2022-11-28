@@ -6,7 +6,7 @@ using UnityEngine;
 public class CirclePulley : CableMeshInterface
 {
 
-    [SerializeField] CircleCollider2D pulleyCollider = null;
+    [HideInInspector][SerializeField] CircleCollider2D pulleyCollider = null;
 
     public Vector2 WorldPosition { get { return PulleyCentreGeometrical; } }
     public float Radius { get { return pulleyCollider.radius; } }
@@ -98,23 +98,21 @@ public class CirclePulley : CableMeshInterface
         return Vector2.SignedAngle(cableVector, centreVector) >= 0;
     }
 
-    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float cableWidth, out int vertex)
+    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float cableWidth, out float identity)
     {
         Vector2 output;
 
-        TangentPointCircle(point, PulleyCentreGeometrical, pulleyCollider.radius, orientation, out output, cableWidth);
-
-        vertex = -1;
+        TangentPointCircle(point, PulleyCentreGeometrical, pulleyCollider.radius, orientation, out output, out identity, cableWidth);
 
         return output;
     }
 
-    public void CircleToCircleTangent(bool thisOrientation, out Vector2 thisTangentOffset, in CirclePulley otherCircle, bool otherOrientation, out Vector2 otherTangentOffset, float cableWidth)
+    public void CircleToCircleTangent(bool thisOrientation, out Vector2 thisTangentOffset, out float thisIdentity, in CirclePulley otherCircle, bool otherOrientation, out Vector2 otherTangentOffset, out float otherIdentity, float cableWidth)
     {
-        TangentCircleCircle(PulleyCentreGeometrical, pulleyCollider.radius, thisOrientation, out thisTangentOffset, otherCircle.WorldPosition, otherCircle.Radius, otherOrientation, out otherTangentOffset, cableWidth);
+        TangentCircleCircle(PulleyCentreGeometrical, pulleyCollider.radius, thisOrientation, out thisTangentOffset, out thisIdentity, otherCircle.WorldPosition, otherCircle.Radius, otherOrientation, out otherTangentOffset, out otherIdentity, cableWidth);
     }
 
-    void TangentPointCircle(Vector2 P1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2, float cableWidth)
+    void TangentPointCircle(Vector2 P1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2, out float angle, float cableWidth)
     {
         Vector2 d = P2 - P1;
 
@@ -130,11 +128,17 @@ public class CirclePulley : CableMeshInterface
 
         alpha = orientation2 ? alpha - Mathf.PI / 2 - phi : alpha + Mathf.PI / 2 + phi;
 
-        tangentOffset2 = r2 * new Vector2(Mathf.Cos(alpha), Mathf.Sin(alpha));
+        tangentOffset2 = (r2 + cableWidth / 2) * new Vector2(Mathf.Cos(alpha), Mathf.Sin(alpha));
+
+        angle = (alpha * Mathf.Rad2Deg - pulleyCollider.transform.rotation.eulerAngles.z + 180.0f) % 360;
+        if (angle < 0) angle += 360.0f;
     }
 
-    void TangentCircleCircle(Vector2 P1, float r1, bool orientation1, out Vector2 tangentOffset1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2, float cableWidth)
+    void TangentCircleCircle(Vector2 P1, float r1, bool orientation1, out Vector2 tangentOffset1, out float angle1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2, out float angle2, float cableWidth)
     {
+        angle1 = 0;
+        angle2 = 0;
+
         Vector2 d = P2 - P1;
 
         bool sameOrientation = (orientation1 && orientation2) || !(orientation1 || orientation2);
@@ -165,31 +169,50 @@ public class CirclePulley : CableMeshInterface
             {
                 Vector2 tangentIntersection = (P2 * (r1 + cableWidth / 2) - P1 * (r2 + cableWidth / 2)) / (r1 - r2);
 
-                TangentPointCircle(tangentIntersection, P1, r1, !orientation1, out tangentOffset1, cableWidth);
-                TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2, cableWidth);
+                TangentPointCircle(tangentIntersection, P1, r1, !orientation1, out tangentOffset1, out angle1, cableWidth);
+                TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2, out angle2, cableWidth);
             }
         }
         else
         {
             Vector2 tangentIntersection = (P2 * (r1 + cableWidth / 2) + P1 * (r2 + cableWidth / 2)) / (r1 + r2 + cableWidth);
 
-            TangentPointCircle(tangentIntersection, P1, r1, orientation1, out tangentOffset1, cableWidth);
-            TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2, cableWidth);
+            TangentPointCircle(tangentIntersection, P1, r1, orientation1, out tangentOffset1, out angle1, cableWidth);
+            TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2, out angle2, cableWidth);
         }
     }
 
-    public override float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation)
+    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth)
     {
         if (!orientation)
         {
-            Vector2 aux = prevTangent;
-            prevTangent = currentTangent;
-            currentTangent = aux;
+            float aux = prevIdentity;
+            prevIdentity = currIdentity;
+            currIdentity = aux;
         }
 
-        float degrees = Vector2.SignedAngle(prevTangent, currentTangent);
+        float angle1 = currIdentity - prevIdentity;
+        bool sign = angle1 < 0;
+        angle1 = Mathf.Abs(angle1);
+        float angle2 = 360.0f - angle1;
 
-        return pulleyCollider.radius * degrees * Mathf.Deg2Rad;
+        if (angle1 > angle2)
+        {
+            angle1 = angle2;
+        }
+
+        return (pulleyCollider.radius + cableWidth / 2) * angle1 * Mathf.Deg2Rad * (sign ? -1.0f : 1.0f);
+    }
+
+    public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableWidth)
+    {
+        float angle = Random.Range(0.0f, 360.0f);
+        Vector2 tangent = (Radius + cableWidth / 2) * new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+
+        pointIdentity = (angle - pulleyCollider.transform.rotation.eulerAngles.z + 180.0f) % 360;
+        if (pointIdentity < 0) pointIdentity += 360.0f;
+
+        return tangent;
     }
 
     public override void CreateChainCollider(float cableWidth)

@@ -40,7 +40,7 @@ public class SurfaceMaster : MonoBehaviour
                 {
                     hitbox = this.GetComponent<Collider2D>();
                 }
-                trigger.Transmit(hitbox);
+                //trigger.Transmit(hitbox);
             }
         }
     }

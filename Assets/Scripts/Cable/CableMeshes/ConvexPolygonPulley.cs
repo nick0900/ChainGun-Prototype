@@ -1,20 +1,22 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 [System.Serializable]
 public class ConvexPolygonPulley : CableMeshInterface
 {
 
-    [SerializeField] PolygonCollider2D pulleyCollider = null;
-    
+    [HideInInspector][SerializeField] PolygonCollider2D pulleyCollider = null;
+
+    [System.Serializable]
     struct VertexData
     {
         public Vector2 cornerNormal;
         public float edgeLength;
     }
 
-    private List<VertexData> polygonData = null;
+    [HideInInspector][SerializeField] private List<VertexData> polygonData = null;
 
     public override CMPrimitives ChainMeshPrimitiveType { get { return CMPrimitives.polygon; } }
 
@@ -111,18 +113,18 @@ public class ConvexPolygonPulley : CableMeshInterface
                 errorsFixed = false;
             }
 
-            if (!DataCheck())
-            {
-                print(this + "/Error: polygon help data unsynched");
-                print(this + "/Fix: polygon help data is updated");
-                UpdatePolygonData();
-            }
-
             if (!pulleyCollider.OverlapPoint(PulleyCentreGeometrical))
             {
                 print(this + "/Error: polygon collider offset point not contained in polygon");
                 print(this + "/Fix: polygon offset and points are recalculated");
                 RecalculatePolygonCollider();
+            }
+
+            if (!DataCheck())
+            {
+                print(this + "/Error: polygon help data unsynched");
+                print(this + "/Fix: polygon help data is updated");
+                UpdatePolygonData();
             }
         }
 
@@ -157,13 +159,21 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public void RecalculatePolygonCollider()
     {
+        Object[] editedFields = { pulleyCollider, this };
+        Undo.RecordObjects(editedFields, "recalculating polygon " + gameObject.name);
+
         Vector2 newCentreOffset = Polycenter();
 
         pulleyCollider.offset += newCentreOffset;
+        
+        Vector2[] points = pulleyCollider.points;
         for (int i = 0; i < pulleyCollider.points.Length; i++)
         {
-            pulleyCollider.points[i] -= newCentreOffset;
+            points[i] -= newCentreOffset;
         }
+        pulleyCollider.SetPath(0, points);
+
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
     }
 
 
@@ -173,20 +183,20 @@ public class ConvexPolygonPulley : CableMeshInterface
         Vector2 first = pulleyCollider.points[pulleyCollider.points.Length - 1] - pulleyCollider.points[0];
         Vector2 second = pulleyCollider.points[1] - pulleyCollider.points[0];
 
-        if (Vector2.SignedAngle(first, second) < 0) return false;
+        if (Vector2.SignedAngle(first, second) > 0) return false;
 
         for (int i = 1; i < pulleyCollider.points.Length - 1; i++)
         {
             first = pulleyCollider.points[i - 1] - pulleyCollider.points[i];
             second = pulleyCollider.points[i + 1] - pulleyCollider.points[i];
 
-            if (Vector2.SignedAngle(first, second) < 0) return false;
+            if (Vector2.SignedAngle(first, second) > 0) return false;
         }
 
         first = pulleyCollider.points[pulleyCollider.points.Length - 2] - pulleyCollider.points[pulleyCollider.points.Length - 1];
         second = pulleyCollider.points[0] - pulleyCollider.points[pulleyCollider.points.Length - 1];
 
-        if (Vector2.SignedAngle(first, second) < 0) return false;
+        if (Vector2.SignedAngle(first, second) > 0) return false;
 
         return true;
     }
@@ -194,6 +204,8 @@ public class ConvexPolygonPulley : CableMeshInterface
     public void UpdatePolygonData()
     {
         if (pulleyCollider.points.Length < 3) return;
+
+        Undo.RecordObject(this, "updating polygon data " + gameObject.name);
 
         polygonData = new List<VertexData>();
 
@@ -224,6 +236,7 @@ public class ConvexPolygonPulley : CableMeshInterface
 
             polygonData.Add(vertexData);
         }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
     }
 
     public bool DataCheck()
@@ -260,16 +273,6 @@ public class ConvexPolygonPulley : CableMeshInterface
         return true;
     }
 
-    private void Awake()
-    {
-        previousPosition = PulleyCentreGeometrical;
-
-        if (MeshGenerated)
-        {
-            UpdatePolygonData();
-        }
-    }
-
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
         Vector2 cableVector = headPrevious - tailPrevious;
@@ -278,7 +281,7 @@ public class ConvexPolygonPulley : CableMeshInterface
         return Vector2.SignedAngle(cableVector, centreVector) >= 0;
     }
 
-    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, out int vertex)
+    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, out float identity)
     {
         int highestIndex = 0;
         Vector2 highestVector = PulleyCentreGeometrical + pulleyCollider.points[highestIndex] - point;
@@ -296,21 +299,24 @@ public class ConvexPolygonPulley : CableMeshInterface
             }
         }
 
-        vertex = highestIndex;
+        identity = highestIndex;
 
 
-        return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) + polygonData[highestIndex].cornerNormal * chainWidth / 2;
+        return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) - PulleyCentreGeometrical + polygonData[highestIndex].cornerNormal * chainWidth / 2;
     }
 
-    public override float ShapeSurfaceDistance(Vector2 prevTangent, int prevVertex, Vector2 currentTangent, int currentVertex, bool orientation)
+    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth)
     {
-        if (prevVertex == currentVertex) return 0.0f;
+        int prevVertex = (int)prevIdentity;
+        int currVertex = (int)currIdentity;
+
+        if (prevVertex == currVertex) return 0.0f;
 
         if (!orientation)
         {
             int aux = prevVertex;
-            prevVertex = currentVertex;
-            currentVertex = aux;
+            prevVertex = currVertex;
+            currVertex = aux;
         }
 
         float firstDistance = 0.0f;
@@ -331,7 +337,7 @@ public class ConvexPolygonPulley : CableMeshInterface
                     index = 0;
                 }
 
-                if (index >= currentVertex)
+                if (index == currVertex)
                 {
                     firstAccumulate = false;
                 }
@@ -353,10 +359,16 @@ public class ConvexPolygonPulley : CableMeshInterface
         return firstDistance;
     }
 
+    public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableWidth)
+    {
+        int pointIndex = Random.Range(0, polygonData.Count - 1);
+        pointIdentity = pointIndex;
+
+        return PulleyToWorldTransform(pulleyCollider.points[pointIndex]) - PulleyCentreGeometrical + polygonData[pointIndex].cornerNormal * cableWidth / 2;
+    }
+
     public override void CreateChainCollider(float chainWidth)
     {
         throw new System.NotImplementedException();
     }
-
-    
 }

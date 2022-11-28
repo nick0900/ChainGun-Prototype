@@ -4,11 +4,13 @@ using UnityEngine;
 
 abstract public class CableBase : MonoBehaviour
 {
-    protected CableBase head = null;
+    [HideInInspector] public CableBase head = null;
 
-    protected CableBase tail = null;
+    [HideInInspector] public CableBase tail = null;
 
     [HideInInspector] public CableJoint node = null;
+
+    [HideInInspector] public CableAnchor anchor = null;
 
     [HideInInspector] static public float bias = 0.2f;
 
@@ -24,9 +26,24 @@ abstract public class CableBase : MonoBehaviour
 
     [HideInInspector] public float storedLength;
 
+    //tangent offset on this pulley towards the head joint
     [HideInInspector] public Vector2 tangentOffsetHead;
 
+    //tangent offset on this pulley towards the tail joint
     [HideInInspector] public Vector2 tangentOffsetTail;
+
+
+    //Previous global position of the cable joint head position
+    [HideInInspector] public Vector2 prevCableThisPosition;
+
+    //Previous global position of the cable joint tail position
+    [HideInInspector] public Vector2 prevCableTailPosition;
+
+    abstract public Vector2 NodePosition { get; }
+    public Vector2 CableEndPosition { get { return tangentOffsetTail + NodePosition; } }
+    public Vector2 CableStartPosition { get { return tail != null ?  tail.tangentOffsetHead + tail.NodePosition : tangentOffsetHead + NodePosition; } }
+
+    public float CableWidth { get { return anchor != null ? anchor.cableWidth : 0.01f; } }
 
     public enum LinkType
     {
@@ -63,52 +80,43 @@ abstract public class CableBase : MonoBehaviour
         Destroy(start.gameObject);
     }
 
-    public CableBase GetHead()
+    public void ChainRecordPositions(CableBase start)
     {
-        return head;
-    }
+        start.prevCableThisPosition = start.CableEndPosition;
+        start.prevCableTailPosition = start.CableStartPosition;
 
-    public CableBase GetTail()
-    {
-        return tail;
-    }
-
-    public void AssignHead(CableBase head)
-    {
-        this.head = head;
-    }
-
-    public void AssignTail(CableBase tail)
-    {
-        this.tail = tail;
+        if (start.head != null)
+        {
+            ChainRecordPositions(start.head);
+        }
     }
 
     public void AddFront(CableBase newNode)
     {
-        newNode.AssignHead(head);
+        newNode.head = this.head;
 
-        head.AssignTail(newNode);
+        head.tail =newNode;
 
-        newNode.AssignTail(this);
+        newNode.tail = this;
 
-        AssignHead(newNode);
+        this.head = newNode;
     }
 
     public void AddBack(CableBase newNode)
     {
-        newNode.AssignTail(tail);
+        newNode.tail = this.tail;
 
-        tail.AssignHead(newNode);
+        tail.head = newNode;
 
-        newNode.AssignHead(this);
+        newNode.head = this;
 
-        AssignTail(newNode);
+        this.tail = newNode;
     }
 
     public void CutChain()
     {
-        head.GetComponent<CableBase>().AssignTail(tail);
+        head.tail = tail;
 
-        tail.GetComponent<CableBase>().AssignHead(head);
+        tail.head = head;
     }
 }

@@ -19,7 +19,7 @@ TagManager:
   - PostProcessing
   - 
   - CharacterPhysics layer
-  - Chain
+  - Cable
   - Projectile
   - Unchainable
   - PlayerTriggers

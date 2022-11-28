@@ -286,7 +286,7 @@ public class GunControll : MonoBehaviour
 
     void ConnectAnchor()
     {
-        anchorGun.GetHead().rb2d.simulated = true;
+        anchorGun.head.rb2d.simulated = true;
 
         currentProjectile.ConnectObject(connectorNode);
     }
@@ -295,8 +295,8 @@ public class GunControll : MonoBehaviour
     {
         currentProjectile.ConnectObject(null);
 
-        anchorGun.GetHead().rb2d.simulated = false;
+        anchorGun.head.rb2d.simulated = false;
 
-        anchorGun.GetHead().transform.position = this.transform.position;
+        anchorGun.head.transform.position = this.transform.position;
     }
 }

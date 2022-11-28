@@ -4,25 +4,31 @@ using UnityEngine;
 
 public class CableAnchor : CableBase
 {
+    public override Vector2 NodePosition { get { return this.transform.position; } }
+
     [SerializeField] private CableBase startHead;
 
-    [SerializeField] private float chainWidth = 0.1f;
+    public float cableWidth = 0.1f;
 
     [SerializeField] private float chainTriggerWidth = 0.5f;
 
+    public uint solveIterations = 10;
+
     void Start()
     {
+        this.anchor = this;
+
         linkType = LinkType.AnchorStart;
 
-        this.AssignHead(startHead);
+        this.head = startHead;
+
+        startHead.anchor = this;
 
         head.linkType = LinkType.AnchorEnd;
 
-        head.node.chainWidth = chainWidth;
-
         head.node.restLength = (this.transform.position - head.transform.position).magnitude;
 
-        head.AssignTail(this);
+        head.tail = this;
 
         head.node.Initilizebox(chainTriggerWidth);
 
@@ -34,22 +40,20 @@ public class CableAnchor : CableBase
 
     }
 
-    private void FixedUpdate()
+    public void CableUpdate()
     {
         if (head == null) return;
 
         ChainUpdate(head);
+    }
 
-        /*
-        for (int i = 0; i < 10; i++)
+    public void CableSolve()
+    {
+        if (head == null) return;
+
+        for (int i = 0; i < solveIterations; i++)
         {
             ChainSolve(head);
         }
-        */
-    }
-
-    private void OnAnimatorIK(int layerIndex)
-    {
-        print("bruh");
     }
 }
