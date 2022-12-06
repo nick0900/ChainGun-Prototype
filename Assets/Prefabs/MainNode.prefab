@@ -28,6 +28,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.1, y: 0.1, z: 0.1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 7899521405863708369}
   m_RootOrder: 0
@@ -112,6 +113,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1274853964878241988}
   m_Father: {fileID: 0}
@@ -166,9 +168,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7a269830e2cc104ca564db1b4a91cb2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  head: {fileID: 0}
+  tail: {fileID: 0}
   node: {fileID: 0}
-  chainWidth: 0.1
-  rb2d: {fileID: 5874190214081864547}
+  anchor: {fileID: 0}
   invMass: 0
   invInertiaTensor:
     e00: 0
@@ -192,20 +195,24 @@ MonoBehaviour:
   storedLength: 0
   tangentOffsetHead: {x: 0, y: 0}
   tangentOffsetTail: {x: 0, y: 0}
+  prevCableThisPosition: {x: 0, y: 0}
+  prevCableTailPosition: {x: 0, y: 0}
   linkType: 2
   nodePrefab: {fileID: 570099689821503197, guid: a04cfbf5066bfe348bb1b62921982352,
     type: 3}
   length: 0
   restLength: 1
-  pulleyRadius: 0
   orientation: 0
-  tOffTail: {x: 0, y: 0}
-  tOffHead: {x: 0, y: 0}
-  previousRotation: {x: 0, y: 0, z: 0, w: 0}
-  previousHingeRotation: {x: 0, y: 0, z: 0, w: 0}
-  previousPulley: {fileID: 0}
   chainTriggerPrefab: {fileID: 6409907381234323344, guid: 3911895af32a6a3409a912c6916ca449,
     type: 3}
+  pulley: {fileID: 0}
+  tOffTail: {x: 0, y: 0}
+  tOffHead: {x: 0, y: 0}
+  tIdentityTail: -1
+  tIdentityHead: -1
+  tangentIdentityTail: -1
+  tangentIdentityHead: -1
+  rb2dEnd: {fileID: 5874190214081864547}
 --- !u!114 &1463189172664164068
 MonoBehaviour:
   m_ObjectHideFlags: 0

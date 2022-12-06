@@ -29,8 +29,11 @@ abstract public class CableMeshInterface : CableMeshGeneration
     //attached rigid body
     abstract public Rigidbody2D PulleyAttachedRigidBody { get; }
 
+    abstract public Transform ColliderTransform { get; }
 
-    abstract public CMPrimitives ChainMeshPrimitiveType { get; }
+    abstract public CMPrimitives CableMeshPrimitiveType { get; }
+
+    abstract public float SafeStoredLength { get; }
 
     //Considering the cable direction going from tail to head, a true orientation will have the cable wrapping counter-clockwise
     //The orientation is calculated throught the relative movement of the cable to the pulley. Only call function at first collision and save that orientation
@@ -45,9 +48,8 @@ abstract public class CableMeshInterface : CableMeshGeneration
 
     //The Identity is a local representation of the tangent offset of the pulley. For circles the angular position in degrees is used and for polygons the vertex indecies is used.
     //a positive difference between prev and curr identity in a true orientation will result in a positive surface distance.
-    abstract public float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth);
-
-
+    //if useSmallest is set to false distance side will be be based on the orientation.
+    abstract public float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth, bool useSmallest);
 
     abstract public void CreateChainCollider(float cableWidth);
 }

@@ -32,7 +32,7 @@ public class CableJoint : CableBase
 
     ContactFilter2D filter;
 
-    LayerMask mask = 1 << 11;
+    LayerMask mask = 1 << 0;
 
     private double epsilon = 0.000001;
 
@@ -47,6 +47,10 @@ public class CableJoint : CableBase
     [HideInInspector] public float tangentIdentityHead = -1;
 
     public override Vector2 NodePosition { get { return pulley != null ? pulley.PulleyCentreGeometrical : this.transform.position; } }
+
+    //temporary solution
+    public Rigidbody2D rb2dEnd = null;
+    public override Rigidbody2D RB2D { get { return rb2dEnd == null ? pulley.PulleyAttachedRigidBody : rb2dEnd; } }
 
     void Awake()
     {
@@ -86,12 +90,12 @@ public class CableJoint : CableBase
         InitializeNodes();
         TriggerBoxUpdate();
         NodeAdder();
-        //NodeRemover();
+        NodeRemover();
     }
 
     void TangentAlgorithm(CableMeshInterface pulley1, CableMeshInterface pulley2, out Vector2 tangent1, out Vector2 tangent2, out float tangentIdentity1, out float tangentIdentity2, bool orientation1, bool orientation2)
     {
-        if ((pulley1.ChainMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle) && (pulley2.ChainMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle))
+        if ((pulley1.CableMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle) && (pulley2.CableMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle))
         {
             (pulley1 as CirclePulley).CircleToCircleTangent(orientation1, out tangent1, out tangentIdentity1, pulley2 as CirclePulley, orientation2, out tangent2, out tangentIdentity2, CableWidth);
             return;
@@ -150,8 +154,8 @@ public class CableJoint : CableBase
             tOffHead = pulley.PointToShapeTangent(head.NodePosition, !this.orientation, CableWidth, out this.tIdentityHead);
         }
 
-        float distTail = this.pulley.ShapeSurfaceDistance(this.tangentIdentityTail, this.tIdentityTail, this.orientation, this.CableWidth);
-        float distHead = this.pulley.ShapeSurfaceDistance(this.tangentIdentityHead, this.tIdentityHead, this.orientation, this.CableWidth);
+        float distTail = this.pulley.ShapeSurfaceDistance(this.tangentIdentityTail, this.tIdentityTail, this.orientation, this.CableWidth, true);
+        float distHead = this.pulley.ShapeSurfaceDistance(this.tangentIdentityHead, this.tIdentityHead, this.orientation, this.CableWidth, true);
 
         // Update stored lengths:
         this.storedLength -= distTail;
@@ -166,8 +170,6 @@ public class CableJoint : CableBase
 
         this.tangentIdentityTail = this.tIdentityTail;
         this.tangentIdentityHead = this.tIdentityHead;
-
-        print(this.storedLength);
     }
 
     void FrictionUpdate()
@@ -209,7 +211,7 @@ public class CableJoint : CableBase
 
     void CableLengthUpdate()
     {
-        Vector3 distVector = tail.transform.position + (Vector3)tail.tangentOffsetHead - this.transform.position - (Vector3)this.tangentOffsetTail;
+        Vector3 distVector = CableStartPosition - CableEndPosition;
         length = distVector.magnitude;
         jacobian = distVector / (length + 0.00001f);
     }
@@ -225,13 +227,13 @@ public class CableJoint : CableBase
         invInertiaTensor = Matrix4x4.zero;
         tail.invInertiaTensor = Matrix4x4.zero;
 
-        if (rb2d != null)
+        if (RB2D != null)
         {
-            Vector3 invInertia1 = Quaternion.identity * new Vector3(rb2d.inertia > 0 ? 1.0f / rb2d.inertia : 0,
-                                                                    rb2d.inertia > 0 ? 1.0f / rb2d.inertia : 0,
-                                                                    rb2d.inertia > 0 ? 1.0f / rb2d.inertia : 0);
+            Vector3 invInertia1 = Quaternion.identity * new Vector3(RB2D.inertia > 0 ? 1.0f / RB2D.inertia : 0,
+                                                                    RB2D.inertia > 0 ? 1.0f / RB2D.inertia : 0,
+                                                                    RB2D.inertia > 0 ? 1.0f / RB2D.inertia : 0);
 
-            Matrix4x4 m = Matrix4x4.Rotate(Quaternion.Euler(0, 0, rb2d.rotation));
+            Matrix4x4 m = Matrix4x4.Rotate(Quaternion.Euler(0, 0, RB2D.rotation));
             invInertiaTensor[0, 0] = invInertia1.x;
             invInertiaTensor[1, 1] = invInertia1.y;
             invInertiaTensor[2, 2] = invInertia1.z;
@@ -239,13 +241,13 @@ public class CableJoint : CableBase
             invInertiaTensor = m * invInertiaTensor * m.transpose;
         }
 
-        if (tail.rb2d != null)
+        if (tail.RB2D != null)
         {
-            Vector3 invInertia2 = Quaternion.identity * new Vector3(tail.rb2d.inertia > 0 ? 1.0f / tail.rb2d.inertia : 0,
-                                                                    tail.rb2d.inertia > 0 ? 1.0f / tail.rb2d.inertia : 0,
-                                                                    tail.rb2d.inertia > 0 ? 1.0f / tail.rb2d.inertia : 0);
+            Vector3 invInertia2 = Quaternion.identity * new Vector3(tail.RB2D.inertia > 0 ? 1.0f / tail.RB2D.inertia : 0,
+                                                                    tail.RB2D.inertia > 0 ? 1.0f / tail.RB2D.inertia : 0,
+                                                                    tail.RB2D.inertia > 0 ? 1.0f / tail.RB2D.inertia : 0);
 
-            Matrix4x4 m2 = Matrix4x4.Rotate(Quaternion.Euler(0, 0, tail.rb2d.rotation));
+            Matrix4x4 m2 = Matrix4x4.Rotate(Quaternion.Euler(0, 0, tail.RB2D.rotation));
             tail.invInertiaTensor[0, 0] = invInertia2.x;
             tail.invInertiaTensor[1, 1] = invInertia2.y;
             tail.invInertiaTensor[2, 2] = invInertia2.z;
@@ -259,19 +261,19 @@ public class CableJoint : CableBase
         invMass = 0;
         tail.invMass = 0;
 
-        if (rb2d != null && !rb2d.isKinematic)
+        if (RB2D != null && !RB2D.isKinematic)
         {
-            invMass = 1.0f / (rb2d.mass);
+            invMass = 1.0f / (RB2D.mass);
 
-            impulseRadiusTail = (Vector2)this.transform.position + tangentOffsetTail - rb2d.worldCenterOfMass;
+            impulseRadiusTail = CableEndPosition - RB2D.worldCenterOfMass;
             w1 = Vector3.Dot(Vector3.Cross(invInertiaTensor.MultiplyVector(Vector3.Cross(impulseRadiusTail, jacobian)), impulseRadiusTail), jacobian);
         }
 
-        if (tail.rb2d != null && !tail.rb2d.isKinematic)
+        if (tail.RB2D != null && !tail.RB2D.isKinematic)
         {
-            tail.invMass = 1.0f / (tail.rb2d.mass);
+            tail.invMass = 1.0f / (tail.RB2D.mass);
 
-            tail.impulseRadiusHead = (Vector2)tail.transform.position + tail.tangentOffsetHead - tail.rb2d.worldCenterOfMass;
+            tail.impulseRadiusHead = CableStartPosition - tail.RB2D.worldCenterOfMass;
             w2 = Vector3.Dot(Vector3.Cross(tail.invInertiaTensor.MultiplyVector(Vector3.Cross(tail.impulseRadiusHead, jacobian)), tail.impulseRadiusHead), jacobian);
         }
 
@@ -289,8 +291,8 @@ public class CableJoint : CableBase
         if (c > 0 && k > 0)
         {
             // calculate the relative velocity of both attachment points:
-            Vector2 relVel = (tail.rb2d != null ? tail.rb2d.GetPointVelocity(tail.transform.position) : Vector2.zero) -
-                             (this.rb2d != null ? this.rb2d.GetPointVelocity(this.transform.position) : Vector2.zero);
+            Vector2 relVel = (tail.RB2D != null ? tail.RB2D.GetPointVelocity(CableStartPosition) : Vector2.zero) -
+                             (this.RB2D != null ? this.RB2D.GetPointVelocity(CableEndPosition) : Vector2.zero);
 
             // velocity constraint: velocity along jacobian must be zero.
             float cDot = Vector2.Dot(relVel, jacobian);
@@ -306,16 +308,16 @@ public class CableJoint : CableBase
             // apply impulse to both rigidbodies:
             impulse = jacobian * lambda;
 
-            if (this.rb2d != null && !this.rb2d.isKinematic)
+            if (this.RB2D != null && !this.RB2D.isKinematic)
             {
-                this.rb2d.velocity -= impulse * invMass;
-                rb2d.angularVelocity -= Mathf.Rad2Deg * invInertiaTensor.MultiplyVector(Vector3.Cross(this.impulseRadiusTail, impulse)).z;
+                this.RB2D.velocity -= impulse * invMass;
+                RB2D.angularVelocity -= Mathf.Rad2Deg * invInertiaTensor.MultiplyVector(Vector3.Cross(this.impulseRadiusTail, impulse)).z;
             }
 
-            if (tail.rb2d != null && !tail.rb2d.isKinematic)
+            if (tail.RB2D != null && !tail.RB2D.isKinematic)
             {
-                tail.rb2d.velocity += impulse * tail.invMass;
-                tail.rb2d.angularVelocity += Mathf.Rad2Deg * tail.invInertiaTensor.MultiplyVector(Vector3.Cross(tail.impulseRadiusHead, impulse)).z;
+                tail.RB2D.velocity += impulse * tail.invMass;
+                tail.RB2D.angularVelocity += Mathf.Rad2Deg * tail.invInertiaTensor.MultiplyVector(Vector3.Cross(tail.impulseRadiusHead, impulse)).z;
             }
         }
     }
@@ -333,7 +335,7 @@ public class CableJoint : CableBase
         RaycastHit2D hit = Physics2D.CircleCast(this.NodePosition + this.tangentOffsetTail, CableWidth / 2 * triggerWidth, tail.NodePosition + tail.tangentOffsetHead - (this.NodePosition + this.tangentOffsetTail), length, mask);
         if (!hit) return;
 
-        print("cableHit");
+        //print("cableHit");
         CableJoint newNode;
 
         if (ConfigurePulley(hit.collider.GetComponent<CableMeshInterface>(), out newNode))
@@ -358,7 +360,7 @@ public class CableJoint : CableBase
                 newNode.tangentOffsetHead = newNode.pulley.PointToShapeTangent(this.NodePosition, !newNode.orientation, newNode.CableWidth, out newNode.tangentIdentityHead);
             }
 
-            newNode.storedLength = 0;
+            newNode.storedLength = newNode.pulley.ShapeSurfaceDistance(newNode.tangentIdentityTail, newNode.tangentIdentityHead, newNode.orientation, newNode.CableWidth, false);
 
             newNode.InitializeNodes();
 
@@ -404,20 +406,7 @@ public class CableJoint : CableBase
 
     void NodeRemover()
     {
-        if (storedLength >= 0) return;
-
-        //if (CircleDistance(tangentOffsetHead, tangentOffsetTail, orientation, pulleyRadius) >= 0) return;
-
-        /*
-        if (tail.linkType == LinkType.AnchorStart)
-        {
-            head.node.previousPulley = null;
-        }
-        else
-        {
-            head.node.previousPulley = tail.node.previousPulley;
-        }
-        */
+        if (!RemoveCondition()) return;
         
         head.node.restLength += this.restLength + this.storedLength;
 
@@ -427,21 +416,39 @@ public class CableJoint : CableBase
         {
             if (head.linkType == LinkType.Rolling)
             {
-                //TangentCircleCircle(head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.tangentOffsetTail, tail.transform.position, tail.node.pulleyRadius, tail.node.orientation, out tail.tangentOffsetHead);
+                TangentAlgorithm(head.node.pulley, tail.node.pulley, out head.tangentOffsetTail, out tail.tangentOffsetHead, out head.node.tangentIdentityTail, out tail.node.tangentIdentityHead, head.node.orientation, tail.node.orientation);
             }
             else
             {
-                //TangentPointCircle(head.transform.position, tail.transform.position, tail.node.pulleyRadius, !tail.node.orientation, out tail.tangentOffsetHead);
+                tail.tangentOffsetHead = tail.node.pulley.PointToShapeTangent(head.NodePosition, !tail.node.orientation, tail.CableWidth, out tail.node.tangentIdentityHead);
             }
         }
         else if(head.linkType == LinkType.Rolling)
         {
-            //TangentPointCircle(tail.transform.position, head.transform.position, head.node.pulleyRadius, head.node.orientation, out head.tangentOffsetTail);
+            head.tangentOffsetTail = head.node.pulley.PointToShapeTangent(tail.NodePosition, head.node.orientation, head.CableWidth, out head.node.tangentIdentityTail);
         }
 
         head.GetComponent<CableJoint>().InitializeNodes();
 
         Destroy(triggerBox.gameObject);
         Destroy(this.gameObject);
+    }
+
+    bool RemoveCondition()
+    {
+        if (this.linkType != LinkType.Rolling) return false;
+
+        if (this.pulley.CableMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle)
+        {
+            return this.storedLength < 0;
+        }
+
+        if (this.storedLength >= pulley.SafeStoredLength) return false;
+
+        Vector2 tailDirection = this.CableEndPosition - this.CableStartPosition;
+        Vector2 headDirection = head.CableEndPosition - head.CableStartPosition;
+        bool sign = Vector2.SignedAngle(tailDirection, headDirection) < 0;
+
+        return sign == this.orientation;
     }
 }

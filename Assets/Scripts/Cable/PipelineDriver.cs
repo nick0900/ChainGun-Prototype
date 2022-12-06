@@ -19,7 +19,7 @@ public class PipelineDriver : MonoBehaviour
             if (cableStart != null)
             {
                 cableStart.CableUpdate();
-                //cableStart.CableSolve();
+                cableStart.CableSolve();
             }
         }
         recordPositions();

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 [System.Serializable]
 public class CirclePulley : CableMeshInterface
@@ -11,7 +12,7 @@ public class CirclePulley : CableMeshInterface
     public Vector2 WorldPosition { get { return PulleyCentreGeometrical; } }
     public float Radius { get { return pulleyCollider.radius; } }
 
-    public override CMPrimitives ChainMeshPrimitiveType { get { return CMPrimitives.polygon; } }
+    public override CMPrimitives CableMeshPrimitiveType { get { return CMPrimitives.Circle; } }
 
     public override bool MeshGenerated { get { return pulleyCollider != null; } }
 
@@ -43,6 +44,10 @@ public class CirclePulley : CableMeshInterface
             return pulleyCollider.attachedRigidbody;
         }
     }
+
+    public override Transform ColliderTransform { get { return pulleyCollider.transform; } }
+
+    public override float SafeStoredLength { get { return 0.0f; } }
 
     protected override void SetupMesh()
     {
@@ -109,7 +114,7 @@ public class CirclePulley : CableMeshInterface
 
     public void CircleToCircleTangent(bool thisOrientation, out Vector2 thisTangentOffset, out float thisIdentity, in CirclePulley otherCircle, bool otherOrientation, out Vector2 otherTangentOffset, out float otherIdentity, float cableWidth)
     {
-        TangentCircleCircle(PulleyCentreGeometrical, pulleyCollider.radius, thisOrientation, out thisTangentOffset, out thisIdentity, otherCircle.WorldPosition, otherCircle.Radius, otherOrientation, out otherTangentOffset, out otherIdentity, cableWidth);
+        TangentCircleCircle(PulleyCentreGeometrical, pulleyCollider.radius, thisOrientation, out thisTangentOffset, out thisIdentity, otherCircle.WorldPosition, otherCircle.Radius, otherOrientation, out otherTangentOffset, out otherIdentity, cableWidth, otherCircle);
     }
 
     void TangentPointCircle(Vector2 P1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2, out float angle, float cableWidth)
@@ -130,11 +135,12 @@ public class CirclePulley : CableMeshInterface
 
         tangentOffset2 = (r2 + cableWidth / 2) * new Vector2(Mathf.Cos(alpha), Mathf.Sin(alpha));
 
-        angle = (alpha * Mathf.Rad2Deg - pulleyCollider.transform.rotation.eulerAngles.z + 180.0f) % 360;
-        if (angle < 0) angle += 360.0f;
+        angle = alpha * Mathf.Rad2Deg - pulleyCollider.transform.rotation.eulerAngles.z + 180.0f;
+        if (angle > 360.0f) angle -= 360.0f;
+        else if (angle < 0) angle += 360.0f;
     }
 
-    void TangentCircleCircle(Vector2 P1, float r1, bool orientation1, out Vector2 tangentOffset1, out float angle1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2, out float angle2, float cableWidth)
+    void TangentCircleCircle(Vector2 P1, float r1, bool orientation1, out Vector2 tangentOffset1, out float angle1, Vector2 P2, float r2, bool orientation2, out Vector2 tangentOffset2, out float angle2, float cableWidth, in CirclePulley pulley2)
     {
         angle1 = 0;
         angle2 = 0;
@@ -155,7 +161,7 @@ public class CirclePulley : CableMeshInterface
         {
             if (r1 == r2)
             {
-                d = Vector2.Perpendicular(d.normalized) * r1;
+                d = Vector2.Perpendicular(d.normalized) * (r1 + cableWidth / 2);
 
                 if (!orientation1)
                 {
@@ -164,6 +170,16 @@ public class CirclePulley : CableMeshInterface
 
                 tangentOffset1 = d;
                 tangentOffset2 = d;
+
+                float globalAngle = Vector2.SignedAngle(d, Vector2.left);
+                angle1 = globalAngle - this.ColliderTransform.rotation.eulerAngles.z + 180.0f;
+                angle2 = globalAngle - pulley2.ColliderTransform.rotation.eulerAngles.z + 180.0f;
+
+                if (angle1 > 360.0f) angle1 -= 360.0f;
+                else if (angle1 < 0) angle1 += 360.0f;
+
+                if (angle2 > 360.0f) angle2 -= 360.0f;
+                else if (angle2 < 0) angle2 += 360.0f;
             }
             else
             {
@@ -182,7 +198,7 @@ public class CirclePulley : CableMeshInterface
         }
     }
 
-    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth)
+    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth, bool useSmallest)
     {
         if (!orientation)
         {
@@ -196,12 +212,17 @@ public class CirclePulley : CableMeshInterface
         angle1 = Mathf.Abs(angle1);
         float angle2 = 360.0f - angle1;
 
-        if (angle1 > angle2)
+        if (useSmallest)
         {
-            angle1 = angle2;
+            if (angle1 > angle2)
+            {
+                angle1 = angle2;
+            }
+
+            return (pulleyCollider.radius + cableWidth / 2) * angle1 * Mathf.Deg2Rad * (sign ? -1.0f : 1.0f);
         }
 
-        return (pulleyCollider.radius + cableWidth / 2) * angle1 * Mathf.Deg2Rad * (sign ? -1.0f : 1.0f);
+        return (pulleyCollider.radius + cableWidth / 2) * angle1 * Mathf.Deg2Rad;
     }
 
     public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableWidth)

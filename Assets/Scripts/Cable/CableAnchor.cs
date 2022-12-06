@@ -6,6 +6,9 @@ public class CableAnchor : CableBase
 {
     public override Vector2 NodePosition { get { return this.transform.position; } }
 
+    [SerializeField] Rigidbody2D rb2d = null;
+    public override Rigidbody2D RB2D { get { return rb2d; } }
+
     [SerializeField] private CableBase startHead;
 
     public float cableWidth = 0.1f;
@@ -16,6 +19,8 @@ public class CableAnchor : CableBase
 
     void Start()
     {
+        if (rb2d == null) rb2d = GetComponent<Rigidbody2D>();
+
         this.anchor = this;
 
         linkType = LinkType.AnchorStart;

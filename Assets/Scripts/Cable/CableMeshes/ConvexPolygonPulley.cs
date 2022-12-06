@@ -18,7 +18,9 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     [HideInInspector][SerializeField] private List<VertexData> polygonData = null;
 
-    public override CMPrimitives ChainMeshPrimitiveType { get { return CMPrimitives.polygon; } }
+    [HideInInspector][SerializeField] float minSide = 0;
+
+    public override CMPrimitives CableMeshPrimitiveType { get { return CMPrimitives.polygon; } }
 
     public override Vector2 PulleyCentreGeometrical
     {
@@ -41,9 +43,13 @@ public class ConvexPolygonPulley : CableMeshInterface
         }
     }
 
+    public override Transform ColliderTransform { get { return pulleyCollider.transform; } }
+
     public override bool MeshGenerated { get { return pulleyCollider != null; } }
 
     public override bool Errornous { get { return !MeshGenerated || !IsConvex() || !DataCheck() || !pulleyCollider.OverlapPoint(PulleyCentreGeometrical); } }
+
+    public override float SafeStoredLength { get { return minSide; } }
 
     protected override void SetupMesh()
     {
@@ -59,6 +65,8 @@ public class ConvexPolygonPulley : CableMeshInterface
         polygonData = null;
 
         pulleyCollider = null;
+
+        minSide = 0;
     }
 
     protected override bool PrintErrors()
@@ -209,6 +217,8 @@ public class ConvexPolygonPulley : CableMeshInterface
 
         polygonData = new List<VertexData>();
 
+        minSide = float.MaxValue;
+
         for (int i = 0; i < pulleyCollider.points.Length; i++)
         {
             Vector2 edgeBack;
@@ -235,6 +245,8 @@ public class ConvexPolygonPulley : CableMeshInterface
             vertexData.edgeLength = edgeFront.magnitude;
 
             polygonData.Add(vertexData);
+
+            if (vertexData.edgeLength < minSide) minSide = vertexData.edgeLength;
         }
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
     }
@@ -305,7 +317,7 @@ public class ConvexPolygonPulley : CableMeshInterface
         return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) - PulleyCentreGeometrical + polygonData[highestIndex].cornerNormal * chainWidth / 2;
     }
 
-    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth)
+    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth, bool useSmallest)
     {
         int prevVertex = (int)prevIdentity;
         int currVertex = (int)currIdentity;
@@ -325,7 +337,7 @@ public class ConvexPolygonPulley : CableMeshInterface
         bool firstAccumulate = true;
 
         int index = prevVertex;
-        for (int i = 0; i < polygonData.Count - 1; i++)
+        for (int i = 0; i < polygonData.Count; i++)
         {
             if (firstAccumulate)
             {
@@ -354,7 +366,12 @@ public class ConvexPolygonPulley : CableMeshInterface
             }
         }
 
-        if (firstDistance > secondDistance) return -secondDistance;
+        if (useSmallest)
+        {
+            if (firstDistance > secondDistance) return -secondDistance;
+
+            return firstDistance;
+        }
 
         return firstDistance;
     }

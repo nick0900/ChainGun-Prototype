@@ -13,8 +13,7 @@ abstract public class CableBase : MonoBehaviour
     [HideInInspector] public CableAnchor anchor = null;
 
     [HideInInspector] static public float bias = 0.2f;
-
-    public Rigidbody2D rb2d;
+    abstract public Rigidbody2D RB2D { get; }
 
     [HideInInspector] public float invMass;
 

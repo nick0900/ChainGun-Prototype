@@ -19,13 +19,12 @@ public class AnchorEndConnector : GraphConnector
             chain = GetComponent<CableJoint>();
         }
         rb2d.useAutoMass = true;
-        //offset = Vector2.zero;
         parent = this.transform.parent;
     }
 
     public override void ConnectTo(Rigidbody2D body)
     {
-        chain.rb2d = body;
+        chain.rb2dEnd = body;
 
         Destroy(rb2d);
         rb2d = null;
@@ -40,7 +39,7 @@ public class AnchorEndConnector : GraphConnector
             rb2d.useAutoMass = true;
         }
 
-        chain.rb2d = rb2d;
+        chain.rb2dEnd = rb2d;
         this.transform.parent = parent;
     }
 }
