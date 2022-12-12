@@ -9,20 +9,18 @@ public class CableJoint : CableBase
 
     int kin = 0;
 
-    private Vector2 jacobian;
-    private float k;
-
-    private Vector2 impulse;
     private float lambda;
 
     private float totalLambda = 0;
 
-    [HideInInspector] public float length = 0;
+    private float effectiveMassDenominator = 0;
+
+    [HideInInspector] public float currentLength = 0;
     [HideInInspector] public float restLength = 1;
 
-    [HideInInspector] public bool orientation;
+    [HideInInspector] public Vector2 cableUnitVector = Vector2.zero;
 
-    private bool slipping = false;
+    [HideInInspector] public bool orientation;
 
     [SerializeField] private GameObject chainTriggerPrefab;
 
@@ -209,115 +207,99 @@ public class CableJoint : CableBase
         */
     }
 
-    void CableLengthUpdate()
-    {
-        Vector3 distVector = CableStartPosition - CableEndPosition;
-        length = distVector.magnitude;
-        jacobian = distVector / (length + 0.00001f);
-    }
-
     void InitializeNodes()
     {
         totalLambda = 0;
 
         if (tail == null) return;
 
-        CableLengthUpdate();
+        Vector3 distVector = CableStartPosition - CableEndPosition;
+        currentLength = distVector.magnitude;
+        cableUnitVector = distVector.normalized;
 
-        invInertiaTensor = Matrix4x4.zero;
-        tail.invInertiaTensor = Matrix4x4.zero;
+        float invMass1 = 0;
+        float invMass2 = 0;
 
-        if (RB2D != null)
-        {
-            Vector3 invInertia1 = Quaternion.identity * new Vector3(RB2D.inertia > 0 ? 1.0f / RB2D.inertia : 0,
-                                                                    RB2D.inertia > 0 ? 1.0f / RB2D.inertia : 0,
-                                                                    RB2D.inertia > 0 ? 1.0f / RB2D.inertia : 0);
+        float inertiaTerm1 = 0;
+        float inertiaTerm2 = 0;
 
-            Matrix4x4 m = Matrix4x4.Rotate(Quaternion.Euler(0, 0, RB2D.rotation));
-            invInertiaTensor[0, 0] = invInertia1.x;
-            invInertiaTensor[1, 1] = invInertia1.y;
-            invInertiaTensor[2, 2] = invInertia1.z;
-            invInertiaTensor[3, 3] = 1;
-            invInertiaTensor = m * invInertiaTensor * m.transpose;
-        }
-
-        if (tail.RB2D != null)
-        {
-            Vector3 invInertia2 = Quaternion.identity * new Vector3(tail.RB2D.inertia > 0 ? 1.0f / tail.RB2D.inertia : 0,
-                                                                    tail.RB2D.inertia > 0 ? 1.0f / tail.RB2D.inertia : 0,
-                                                                    tail.RB2D.inertia > 0 ? 1.0f / tail.RB2D.inertia : 0);
-
-            Matrix4x4 m2 = Matrix4x4.Rotate(Quaternion.Euler(0, 0, tail.RB2D.rotation));
-            tail.invInertiaTensor[0, 0] = invInertia2.x;
-            tail.invInertiaTensor[1, 1] = invInertia2.y;
-            tail.invInertiaTensor[2, 2] = invInertia2.z;
-            tail.invInertiaTensor[3, 3] = 1;
-            tail.invInertiaTensor = m2 * tail.invInertiaTensor * m2.transpose;
-        }
-
-        float w1 = 0;
-        float w2 = 0;
-
-        invMass = 0;
-        tail.invMass = 0;
+        Vector3 impulseRadius = Vector3.zero;
 
         if (RB2D != null && !RB2D.isKinematic)
         {
-            invMass = 1.0f / (RB2D.mass);
+            invMass1 = 1.0f / RB2D.mass;
 
-            impulseRadiusTail = CableEndPosition - RB2D.worldCenterOfMass;
-            w1 = Vector3.Dot(Vector3.Cross(invInertiaTensor.MultiplyVector(Vector3.Cross(impulseRadiusTail, jacobian)), impulseRadiusTail), jacobian);
+
+            if (RB2D.inertia != 0)
+            {
+                impulseRadius = Vector3.Cross(this.tangentOffsetTail, cableUnitVector);
+
+                inertiaTerm1 = Vector3.Dot(impulseRadius, impulseRadius) / RB2D.inertia;
+            }
         }
 
         if (tail.RB2D != null && !tail.RB2D.isKinematic)
         {
-            tail.invMass = 1.0f / (tail.RB2D.mass);
+            invMass2 = 1.0f / tail.RB2D.mass;
 
-            tail.impulseRadiusHead = CableStartPosition - tail.RB2D.worldCenterOfMass;
-            w2 = Vector3.Dot(Vector3.Cross(tail.invInertiaTensor.MultiplyVector(Vector3.Cross(tail.impulseRadiusHead, jacobian)), tail.impulseRadiusHead), jacobian);
+            if ( tail.RB2D.inertia != 0)
+            {
+                impulseRadius = Vector3.Cross(tail.tangentOffsetHead, cableUnitVector);
+
+                inertiaTerm2 = Mathf.Pow(impulseRadius.z, 2) / tail.RB2D.inertia;
+            }
         }
 
-        k = invMass + tail.invMass + w1 + w2;
+        //the mass projected along the cable direction that the impulse lambda must work against
+        //larger masses result in a smaller denominator. a static object with infinite mass will give terms of zero
+        //if both objects are static no impulse needs to be calculated
+        effectiveMassDenominator = invMass1 + invMass2 + inertiaTerm1 + inertiaTerm2;
     }
 
     public void CableSegmentSolve()
     {
         if (tail == null) return;
 
-        float c = length - restLength;
-        impulse = Vector2.zero;
+        float positionError = currentLength - restLength;
         lambda = 0;
 
-        if (c > 0 && k > 0)
+        if (positionError > 0 && effectiveMassDenominator > 0)
         {
-            // calculate the relative velocity of both attachment points:
+            //project the relative velocity of the two bodies along the cable direction
             Vector2 relVel = (tail.RB2D != null ? tail.RB2D.GetPointVelocity(CableStartPosition) : Vector2.zero) -
                              (this.RB2D != null ? this.RB2D.GetPointVelocity(CableEndPosition) : Vector2.zero);
 
-            // velocity constraint: velocity along jacobian must be zero.
-            float cDot = Vector2.Dot(relVel, jacobian);
 
-            // calculate constraint force intensity:  
-            lambda = (-cDot - c * bias / Time.fixedDeltaTime) / k;
+            float velConstraintValue = Vector2.Dot(relVel, cableUnitVector);
+            float velocitySteering = bias * positionError / Time.fixedDeltaTime;
 
-            // accumulate and clamp impulse:
+            //impulse intensity:  
+            lambda = -(velConstraintValue + velocitySteering) / effectiveMassDenominator;
+
+            //accumulate and clamp impulse
             float tempLambda = totalLambda;
             totalLambda = Mathf.Min(0, totalLambda + lambda);
             lambda = totalLambda - tempLambda;
 
-            // apply impulse to both rigidbodies:
-            impulse = jacobian * lambda;
-
+            //apply impulse
             if (this.RB2D != null && !this.RB2D.isKinematic)
             {
-                this.RB2D.velocity -= impulse * invMass;
-                RB2D.angularVelocity -= Mathf.Rad2Deg * invInertiaTensor.MultiplyVector(Vector3.Cross(this.impulseRadiusTail, impulse)).z;
+                this.RB2D.velocity -= lambda * cableUnitVector / this.RB2D.mass;
+
+                if (this.RB2D.inertia != 0)
+                {
+                    this.RB2D.angularVelocity -= Mathf.Rad2Deg * lambda * Vector3.Cross(this.tangentOffsetTail, cableUnitVector).z / this.RB2D.inertia;
+                }
             }
 
             if (tail.RB2D != null && !tail.RB2D.isKinematic)
             {
-                tail.RB2D.velocity += impulse * tail.invMass;
-                tail.RB2D.angularVelocity += Mathf.Rad2Deg * tail.invInertiaTensor.MultiplyVector(Vector3.Cross(tail.impulseRadiusHead, impulse)).z;
+                tail.RB2D.velocity += lambda * cableUnitVector * tail.RB2D.mass;
+
+                if (tail.RB2D.inertia != 0)
+                {
+                    tail.RB2D.angularVelocity += Mathf.Rad2Deg * lambda * Vector3.Cross(tail.tangentOffsetHead, cableUnitVector).z / tail.RB2D.inertia;
+                }
             }
         }
     }
@@ -332,7 +314,7 @@ public class CableJoint : CableBase
 
     public void NodeAdder()
     {
-        RaycastHit2D hit = Physics2D.CircleCast(this.NodePosition + this.tangentOffsetTail, CableWidth / 2 * triggerWidth, tail.NodePosition + tail.tangentOffsetHead - (this.NodePosition + this.tangentOffsetTail), length, mask);
+        RaycastHit2D hit = Physics2D.CircleCast(this.NodePosition + this.tangentOffsetTail, CableWidth / 2 * triggerWidth, tail.NodePosition + tail.tangentOffsetHead - (this.NodePosition + this.tangentOffsetTail), currentLength, mask);
         if (!hit) return;
 
         //print("cableHit");
@@ -369,9 +351,9 @@ public class CableJoint : CableBase
             float initialRestLength = this.restLength;
 
             // Adjust rest lengths so that tensions are equal:
-            float tension = initialRestLength / (this.length + newNode.length);
-            this.restLength = this.length * tension;
-            newNode.restLength = newNode.length * tension;
+            float tension = initialRestLength / (this.currentLength + newNode.currentLength);
+            this.restLength = this.currentLength * tension;
+            newNode.restLength = newNode.currentLength * tension;
 
             newNode.Initilizebox(this.triggerWidth);
 
@@ -428,7 +410,7 @@ public class CableJoint : CableBase
             head.tangentOffsetTail = head.node.pulley.PointToShapeTangent(tail.NodePosition, head.node.orientation, head.CableWidth, out head.node.tangentIdentityTail);
         }
 
-        head.GetComponent<CableJoint>().InitializeNodes();
+        head.node.InitializeNodes();
 
         Destroy(triggerBox.gameObject);
         Destroy(this.gameObject);

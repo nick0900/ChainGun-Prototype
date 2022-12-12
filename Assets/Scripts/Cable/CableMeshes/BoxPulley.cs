@@ -88,19 +88,6 @@ public class BoxPulley : CableMeshInterface
         return errorsFixed;
     }
 
-    private void Awake()
-    {
-        previousPosition = PulleyCentreGeometrical;
-    }
-
-    private void FixedUpdate()
-    {
-        if (pulleyCollider.attachedRigidbody.bodyType != RigidbodyType2D.Static)
-        {
-            previousPosition = PulleyCentreGeometrical;
-        }
-    }
-
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
         Vector2 cableVector = headPrevious - tailPrevious;

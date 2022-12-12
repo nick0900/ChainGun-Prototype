@@ -12,17 +12,13 @@ abstract public class CableBase : MonoBehaviour
 
     [HideInInspector] public CableAnchor anchor = null;
 
+    //bias for adjusting position correction
     [HideInInspector] static public float bias = 0.2f;
+
+    //the rigid body the cable constraint will affect
     abstract public Rigidbody2D RB2D { get; }
 
-    [HideInInspector] public float invMass;
-
-    [HideInInspector] public Matrix4x4 invInertiaTensor;
-
-    [HideInInspector] public Vector3 impulseRadiusTail;
-
-    [HideInInspector] public Vector3 impulseRadiusHead;
-
+    //the total cable stored in object
     [HideInInspector] public float storedLength;
 
     //tangent offset on this pulley towards the head joint
