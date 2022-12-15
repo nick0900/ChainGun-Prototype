@@ -40,6 +40,10 @@ abstract public class CableBase : MonoBehaviour
 
     public float CableWidth { get { return anchor != null ? anchor.cableWidth : 0.01f; } }
 
+    public float CableStaticFriction { get { return anchor != null ? anchor.StaticFriction : 0.01f; } }
+
+    public float CableKineticFriction { get { return anchor != null ? anchor.StaticFriction : 0.01f; } }
+
     public enum LinkType
     {
         Rolling,
@@ -57,12 +61,31 @@ abstract public class CableBase : MonoBehaviour
             ChainUpdate(start.head);
         }
     }
+
     public void ChainSolve(CableBase start)
     {
-        start.node.CableSegmentSolve();
+        start.node.CableSegmentSolveConstrain();
         if (start.head != null)
         {
             ChainSolve(start.head);
+        }
+    }
+
+    public void ChainImpulseAdjust(CableBase start)
+    {
+        start.node.CableSegmentAdjustImpulses();
+        if (start.head != null)
+        {
+            ChainImpulseAdjust(start.head);
+        }
+    }
+
+    public void ChainImpulseApply(CableBase start)
+    {
+        start.node.CableSegmentApplyImpulses();
+        if (start.head != null)
+        {
+            ChainImpulseApply(start.head);
         }
     }
 
