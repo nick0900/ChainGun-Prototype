@@ -24,8 +24,10 @@ abstract public class CableMeshGeneration : MonoBehaviour
     [ContextMenu("Correct Errors")]
     public bool CorrectErrorMenu()
     {
+#if UNITY_EDITOR
         Undo.RecordObject(this, "Correcting cablemesh " + gameObject.name);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
         return CorrectErrors();
     }
     abstract protected bool CorrectErrors();
@@ -34,8 +36,10 @@ abstract public class CableMeshGeneration : MonoBehaviour
     public void GenerateChainMesh()
     {
         if (submesh || protectSettings) return;
+#if UNITY_EDITOR
         Undo.RecordObject(this, "Generated cablemesh " + gameObject.name);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
         SetupMesh();
         PrintErrors();
     }
@@ -43,8 +47,10 @@ abstract public class CableMeshGeneration : MonoBehaviour
     public void GenerateSubMesh(CableMeshInterface root)
     {
         if (!submesh || protectSettings) return;
+#if UNITY_EDITOR
         Undo.RecordObject(this, "Generated cablemesh " + gameObject.name);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
         SetupMesh();
         PrintErrors();
     }
@@ -61,8 +67,10 @@ abstract public class CableMeshGeneration : MonoBehaviour
     [ContextMenu("Remove Chain Mesh")]
     public void RemoveCableMeshMenu()
     {
+#if UNITY_EDITOR
         Undo.RecordObject(this, "Destroyed cablemesh " + gameObject.name);
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
         RemoveCableMesh();
     }
     abstract protected void RemoveCableMesh();

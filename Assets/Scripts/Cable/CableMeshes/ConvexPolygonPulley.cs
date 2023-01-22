@@ -167,8 +167,10 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public void RecalculatePolygonCollider()
     {
+#if UNITY_EDITOR
         Object[] editedFields = { pulleyCollider, this };
         Undo.RecordObjects(editedFields, "recalculating polygon " + gameObject.name);
+#endif
 
         Vector2 newCentreOffset = Polycenter();
 
@@ -181,7 +183,9 @@ public class ConvexPolygonPulley : CableMeshInterface
         }
         pulleyCollider.SetPath(0, points);
 
+#if UNITY_EDITOR
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
     }
 
 
@@ -213,7 +217,9 @@ public class ConvexPolygonPulley : CableMeshInterface
     {
         if (pulleyCollider.points.Length < 3) return;
 
+#if UNITY_EDITOR
         Undo.RecordObject(this, "updating polygon data " + gameObject.name);
+#endif
 
         polygonData = new List<VertexData>();
 
@@ -248,7 +254,9 @@ public class ConvexPolygonPulley : CableMeshInterface
 
             if (vertexData.edgeLength < minSide) minSide = vertexData.edgeLength;
         }
+#if UNITY_EDITOR
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(gameObject.scene);
+#endif
     }
 
     public bool DataCheck()

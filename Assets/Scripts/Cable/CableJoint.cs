@@ -9,8 +9,6 @@ public class CableJoint : CableBase
 
     int kin = 0;
 
-    [HideInInspector] public float lambda;
-
     [HideInInspector] public float totalLambda = 0;
 
     private float effectiveMassDenominator = 0;
@@ -94,7 +92,10 @@ public class CableJoint : CableBase
     public void CableSegmentUpdate()
     {
         UpdatePulley();
-        SlipUpdate();
+        if (DoSlipSimulation)
+        {
+            SlipUpdate();
+        }
         InitializeNodes();
         TriggerBoxUpdate();
         NodeAdder();
@@ -184,18 +185,15 @@ public class CableJoint : CableBase
     {
         if ((tail == null) || head == null) return;
 
-        //print((this.totalLambda / Time.fixedDeltaTime) + " " + (head.node.totalLambda / Time.fixedDeltaTime));
-
         bool headBigger = this.totalLambda > head.node.totalLambda;
 
         float greaterLambda = headBigger ? -head.node.totalLambda : -this.totalLambda;
 
         float lesserLambda = !headBigger ? -head.node.totalLambda : -this.totalLambda;
 
-        //print((this.totalLambda) + " " + (head.node.totalLambda));
 
-        float angle = Vector2.SignedAngle(this.cableUnitVector, head.node.cableUnitVector);
-        if (angle < 0) angle = 360.0f - angle;
+        float angle = Vector2.SignedAngle(head.node.cableUnitVector, this.cableUnitVector);
+        if (angle < 0) angle = 360.0f + angle;
         angle *= Mathf.Deg2Rad;
 
         float lambdaMaxStatic = lesserLambda * Mathf.Exp(CableStaticFriction * angle);
@@ -292,10 +290,11 @@ public class CableJoint : CableBase
         if (tail == null) return;
 
         float positionError = currentLength - restLength;
-        lambda = 0;
 
         if (positionError > 0 && effectiveMassDenominator > 0)
         {
+            float lambda = 0;
+
             //project the relative velocity of the two bodies along the cable direction
             Vector2 relVel = (tail.RB2D != null ? tail.RB2D.GetPointVelocity(CableStartPosition) : Vector2.zero) -
                              (this.RB2D != null ? this.RB2D.GetPointVelocity(CableEndPosition) : Vector2.zero);
@@ -311,74 +310,26 @@ public class CableJoint : CableBase
             float tempLambda = totalLambda;
             totalLambda = Mathf.Min(0, totalLambda + lambda);
             lambda = totalLambda - tempLambda;
-        }
-    }
 
-    public void CableSegmentAdjustImpulses()
-    {
-        if ((tail == null) || head == null) return;
-        
-        //the impulses are negative
-        bool headBigger = this.lambda > head.node.lambda;
-
-        float greaterLambda = Mathf.Min(0, headBigger ? head.node.lambda : this.lambda);
-
-        float lesserLambda = Mathf.Min(0, !headBigger ? head.node.lambda : this.lambda);
-
-        //implement angle diff off stored cable
-        float lambdaMax = lesserLambda * Mathf.Exp(CableStaticFriction * this.storedLength);
-
-        float lambdaSurplus = greaterLambda - lambdaMax;
-
-        print(lambdaSurplus);
-
-        if (lambdaSurplus >= 0) return;
-
-        float positionError = currentLength - restLength;
-        /*
-        if (headBigger)
-        {
-            head.node.lambda -= lambdaSurplus;
-            totalLambda = Mathf.Min(0, totalLambda - lambdaSurplus);
-
-            //float slipLength = positionError * lambdaSurplus / greaterLambda;
-
-            //head.node.restLength += slipLength;
-            //this.restLength -= slipLength;
-        }
-        else
-        {
-            this.lambda -= lambdaSurplus;
-            totalLambda = Mathf.Min(0, totalLambda - lambdaSurplus);
-
-            //float slipLength = positionError * lambdaSurplus / greaterLambda;
-
-            //this.restLength += slipLength;
-            //head.node.restLength -= slipLength;
-        }
-        */
-    }
-
-    public void CableSegmentApplyImpulses()
-    {
-        //apply impulse
-        if (this.RB2D != null && !this.RB2D.isKinematic)
-        {
-            this.RB2D.velocity -= lambda * cableUnitVector / this.RB2D.mass;
-
-            if (this.RB2D.inertia != 0)
+            //apply impulse
+            if (this.RB2D != null && !this.RB2D.isKinematic)
             {
-                this.RB2D.angularVelocity -= Mathf.Rad2Deg * lambda * Vector3.Cross(this.tangentOffsetTail, cableUnitVector).z / this.RB2D.inertia;
+                this.RB2D.velocity -= lambda * cableUnitVector / this.RB2D.mass;
+
+                if (this.RB2D.inertia != 0)
+                {
+                    this.RB2D.angularVelocity -= Mathf.Rad2Deg * lambda * Vector3.Cross(this.tangentOffsetTail, cableUnitVector).z / this.RB2D.inertia;
+                }
             }
-        }
 
-        if (tail.RB2D != null && !tail.RB2D.isKinematic)
-        {
-            tail.RB2D.velocity += lambda * cableUnitVector / tail.RB2D.mass;
-
-            if (tail.RB2D.inertia != 0)
+            if (tail.RB2D != null && !tail.RB2D.isKinematic)
             {
-                tail.RB2D.angularVelocity += Mathf.Rad2Deg * lambda * Vector3.Cross(tail.tangentOffsetHead, cableUnitVector).z / tail.RB2D.inertia;
+                tail.RB2D.velocity += lambda * cableUnitVector / tail.RB2D.mass;
+
+                if (tail.RB2D.inertia != 0)
+                {
+                    tail.RB2D.angularVelocity += Mathf.Rad2Deg * lambda * Vector3.Cross(tail.tangentOffsetHead, cableUnitVector).z / tail.RB2D.inertia;
+                }
             }
         }
     }

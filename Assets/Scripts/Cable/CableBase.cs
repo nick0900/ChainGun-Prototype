@@ -44,6 +44,8 @@ abstract public class CableBase : MonoBehaviour
 
     public float CableKineticFriction { get { return anchor != null ? anchor.StaticFriction : 0.01f; } }
 
+    public bool DoSlipSimulation { get { return anchor != null ? anchor.CableSlipping : false; } }
+
     public enum LinkType
     {
         Rolling,
@@ -68,24 +70,6 @@ abstract public class CableBase : MonoBehaviour
         if (start.head != null)
         {
             ChainSolve(start.head);
-        }
-    }
-
-    public void ChainImpulseAdjust(CableBase start)
-    {
-        start.node.CableSegmentAdjustImpulses();
-        if (start.head != null)
-        {
-            ChainImpulseAdjust(start.head);
-        }
-    }
-
-    public void ChainImpulseApply(CableBase start)
-    {
-        start.node.CableSegmentApplyImpulses();
-        if (start.head != null)
-        {
-            ChainImpulseApply(start.head);
         }
     }
 
