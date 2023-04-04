@@ -172,26 +172,6 @@ MonoBehaviour:
   tail: {fileID: 0}
   node: {fileID: 0}
   anchor: {fileID: 0}
-  invMass: 0
-  invInertiaTensor:
-    e00: 0
-    e01: 0
-    e02: 0
-    e03: 0
-    e10: 0
-    e11: 0
-    e12: 0
-    e13: 0
-    e20: 0
-    e21: 0
-    e22: 0
-    e23: 0
-    e30: 0
-    e31: 0
-    e32: 0
-    e33: 0
-  impulseRadiusTail: {x: 0, y: 0, z: 0}
-  impulseRadiusHead: {x: 0, y: 0, z: 0}
   storedLength: 0
   tangentOffsetHead: {x: 0, y: 0}
   tangentOffsetTail: {x: 0, y: 0}
@@ -200,8 +180,11 @@ MonoBehaviour:
   linkType: 2
   nodePrefab: {fileID: 570099689821503197, guid: a04cfbf5066bfe348bb1b62921982352,
     type: 3}
-  length: 0
+  totalLambda: 0
+  slipVelocityThreshold: 0.01
+  currentLength: 0
   restLength: 1
+  cableUnitVector: {x: 0, y: 0}
   orientation: 0
   chainTriggerPrefab: {fileID: 6409907381234323344, guid: 3911895af32a6a3409a912c6916ca449,
     type: 3}

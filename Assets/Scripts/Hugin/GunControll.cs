@@ -273,6 +273,8 @@ public class GunControll : MonoBehaviour
         if (chainConnected)
         {
             ConnectAnchor();
+
+            anchorGun.head.RB2D.AddForce((this.transform.rotation * Vector2.right) * 100.0f);
         }
         else
         {
@@ -295,8 +297,10 @@ public class GunControll : MonoBehaviour
     {
         currentProjectile.ConnectObject(null);
 
-        anchorGun.head.RB2D.simulated = false;
+        anchorGun.head.ChainDestroy(anchorGun.head);
 
-        anchorGun.head.transform.position = this.transform.position;
+        //anchorGun.head.RB2D.simulated = false;
+
+        //anchorGun.head.transform.position = this.transform.position;
     }
 }

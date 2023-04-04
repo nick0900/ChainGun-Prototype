@@ -463,4 +463,9 @@ public class CableJoint : CableBase
 
         return sign == this.orientation;
     }
+
+    private void OnDestroy()
+    {
+        Destroy(triggerBox.gameObject);
+    }
 }
