@@ -56,6 +56,7 @@ public class CableAnchor : CableBase
         if (head == null) return;
 
         ChainUpdate(head);
+        LengthUpdate(head);
     }
 
     public void CableSolve()

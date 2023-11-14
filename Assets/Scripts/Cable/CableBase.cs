@@ -64,6 +64,15 @@ abstract public class CableBase : MonoBehaviour
         }
     }
 
+    public void LengthUpdate(CableBase start)
+    {
+        if (start.head != null)
+        {
+            start.node.CableLengthUpdate();
+            LengthUpdate(start.head);
+        }
+    }
+
     public void ChainSolve(CableBase start)
     {
         start.node.CableSegmentSolveConstrain();

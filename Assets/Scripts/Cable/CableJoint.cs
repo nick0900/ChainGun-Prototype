@@ -25,6 +25,8 @@ public class CableJoint : CableBase
 
     [HideInInspector] public float currentLength = 0;
     [HideInInspector] public float restLength = 1;
+    [HideInInspector] public float initialLength = 1;
+
 
     [HideInInspector] public Vector2 cableUnitVector = Vector2.zero;
 
@@ -94,7 +96,7 @@ public class CableJoint : CableBase
         UpdatePulley();
         if (DoSlipSimulation)
         {
-            SlipUpdate();
+            //SlipUpdate();
         }
         InitializeNodes();
         TriggerBoxUpdate();
@@ -241,6 +243,8 @@ public class CableJoint : CableBase
         currentLength = distVector.magnitude;
         cableUnitVector = distVector.normalized;
 
+        initialLength = restLength;
+
         float invMass1 = 0;
         float invMass2 = 0;
 
@@ -282,6 +286,79 @@ public class CableJoint : CableBase
         if (head != null)
         {
             this.slippingMass = (tail.RB2D.mass + head.RB2D.mass);
+        }
+    }
+
+    private void BalanceError(float tailError, float headError)
+    {
+        //both constraints will be balanced
+        print("before " + tailError + "    " + headError);
+
+        float distributedError = (tailError + headError) / 2;
+
+        restLength += tailError - distributedError;
+        head.node.restLength += headError - distributedError;
+
+        tailError = currentLength - restLength;
+        headError = head.node.currentLength - head.node.restLength;
+
+        print("after " + tailError + "    " + headError);
+    }
+
+    public void CableLengthUpdate()
+    {
+        if (currentLength > initialLength)
+        {
+            restLength += (currentLength - initialLength);
+            head.node.restLength -= (currentLength - initialLength);
+        }
+        if (head.node.currentLength > head.node.initialLength)
+        {
+            restLength -= (head.node.currentLength - head.node.initialLength);
+            head.node.restLength += (head.node.currentLength - head.node.initialLength);
+        }
+        return;
+
+        float tailError = currentLength - restLength;
+        float headError = head.node.currentLength - head.node.restLength;
+
+        if ((tailError <= 0.0f)) 
+        {
+            if (headError <= 0.0f) 
+            {
+                //both sides satisfy constraint, no need to distribute length
+
+            }
+            else
+            {
+                //head constraint require slack from tail
+                restLength -= headError;
+                head.node.restLength += headError;
+
+                if ((tailError = currentLength - restLength) > 0)
+                {
+                    BalanceError(tailError, 0.0f);
+                }
+            }
+        }
+        else
+        {
+            if (headError <= 0.0f)
+            {
+                //tail constraint require slack from head
+                restLength += headError;
+                head.node.restLength -= headError;
+
+                if ((headError = head.node.currentLength - head.node.restLength) > 0)
+                {
+                    BalanceError(0.0f, headError);
+                }
+
+            }
+            else
+            {
+                BalanceError(tailError, headError);
+            }
         }
     }
 
