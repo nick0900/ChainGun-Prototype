@@ -65,8 +65,7 @@ public class CableAnchor : CableBase
 
         for (int i = 0; i < solveIterations; i++)
         {
-            ChainSolve(head);
-            ChainBalanceSolve(head);
+            head.node.CableJointsSolve(head);
         }
     }
 }

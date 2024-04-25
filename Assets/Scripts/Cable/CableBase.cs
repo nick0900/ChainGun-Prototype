@@ -77,24 +77,6 @@ abstract public class CableBase : MonoBehaviour
         }
     }
 
-    public void ChainSolve(CableBase start)
-    {
-        start.node.CableSegmentSolveConstrain();
-        if (start.head != null)
-        {
-            ChainSolve(start.head);
-        }
-    }
-
-    public void ChainBalanceSolve(CableBase start)
-    {
-        start.node.CablePulleyTensionBalance();
-        if (start.head != null)
-        {
-            ChainBalanceSolve(start.head);
-        }
-    }
-
     public void ChainDestroy(CableBase start)
     {
         if (start.head != null)
