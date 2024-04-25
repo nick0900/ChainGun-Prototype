@@ -42,7 +42,7 @@ abstract public class CableBase : MonoBehaviour
 
     public float CableStaticFriction { get { return anchor != null ? anchor.StaticFriction : 0.01f; } }
 
-    public float CableKineticFriction { get { return anchor != null ? anchor.StaticFriction : 0.01f; } }
+    public float CableKineticFriction { get { return anchor != null ? anchor.KineticFriction : 0.01f; } }
 
     public bool DoSlipSimulation { get { return anchor != null ? anchor.CableSlipping : false; } }
 
@@ -64,12 +64,34 @@ abstract public class CableBase : MonoBehaviour
         }
     }
 
+    public void ChainSlipUpdate(CableBase start)
+    {
+        ChainSlipUpdateRec(start, null, 0);
+    }
+    void ChainSlipUpdateRec(CableBase start, CableBase slippingNodesStart, int slippingCount)
+    {
+        start.node.CableSlipUpdate(ref slippingNodesStart, ref slippingCount);
+        if (start.head != null)
+        {
+            ChainSlipUpdateRec(start.head, slippingNodesStart, slippingCount);
+        }
+    }
+
     public void ChainSolve(CableBase start)
     {
         start.node.CableSegmentSolveConstrain();
         if (start.head != null)
         {
             ChainSolve(start.head);
+        }
+    }
+
+    public void ChainBalanceSolve(CableBase start)
+    {
+        start.node.CablePulleyTensionBalance();
+        if (start.head != null)
+        {
+            ChainBalanceSolve(start.head);
         }
     }
 
