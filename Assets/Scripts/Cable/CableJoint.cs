@@ -289,6 +289,7 @@ public class CableJoint : CableBase
             }
 
             slipping = slidingCondition > 0.0f;
+            slipping = true;
         }
         else
         {
@@ -372,7 +373,7 @@ public class CableJoint : CableBase
 
     float TensionEstimation(CableJoint currentNode)
     {
-        return (currentNode.currentLength - currentNode.restLength) / currentNode.effectiveMassDenominator;
+        return currentNode.currentLength - currentNode.restLength;
     }
 
     bool SlipSolutionTest(CableJoint start, int count)
@@ -392,8 +393,8 @@ public class CableJoint : CableBase
     void SlipSolve(CableBase start, int count)
     {
         int iterations = 0;
-        //while (!SlipSolutionTest(start.node, count))
-        while (iterations < 1)
+        while (!SlipSolutionTest(start.node, count))
+        //while (iterations < 1)
         {
             iterations++;
             CableJoint currentNode = start.node;
@@ -403,8 +404,8 @@ public class CableJoint : CableBase
             {
 
                 currentNode = currentNode.head.node;
-                currentNode.SlipA = FrictionCompounded(start, i) * currentNode.effectiveMassDenominator / start.node.effectiveMassDenominator;
-                currentNode.SlipB = currentNode.effectiveMassDenominator * (currentNode.estimatedTension - FrictionCompounded(start, i) * start.node.estimatedTension);
+                currentNode.SlipA = FrictionCompounded(start, i);
+                currentNode.SlipB = currentNode.estimatedTension - FrictionCompounded(start, i) * start.node.estimatedTension;
 
                 sumA += currentNode.SlipA;
                 sumB += currentNode.SlipB;
@@ -422,7 +423,8 @@ public class CableJoint : CableBase
                 currentNode.estimatedTension = TensionEstimation(currentNode);
             }
         }
-        //print("solved with " + iterations + " iterations");
+        //print(SlipSolutionTest(start.node, count));
+        print("solved with " + iterations + " iterations");
     }
 
     public void CableJointsSolve(CableBase start)
@@ -432,8 +434,8 @@ public class CableJoint : CableBase
         if (start.node.slipping)
         {
             start.node.CableSlipGroupSolveConstrain();
-
-            for (int i = 0; i < start.node.slipNodesCount; i++)
+            int count = start.node.slipNodesCount;
+            for (int i = 0; i < count; i++)
             {
                 start = start.head;
             }
