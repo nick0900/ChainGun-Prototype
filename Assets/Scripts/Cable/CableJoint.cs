@@ -189,13 +189,15 @@ public class CableJoint : CableBase
 
         this.tangentIdentityTail = this.tIdentityTail;
         this.tangentIdentityHead = this.tIdentityHead;
+
+        print(this.storedLength);
     }
 
     void InitializeNodes()
     {
         previousTrueTension = Mathf.Abs(totalLambda);
         if ((head != null) && (tail != null))
-            print(this.totalLambda + " " + head.node.totalLambda + " " + (Mathf.Abs(this.totalLambda) - Mathf.Abs(head.node.totalLambda)));
+            //print(this.totalLambda + " " + head.node.totalLambda + " " + (Mathf.Abs(this.totalLambda) - Mathf.Abs(head.node.totalLambda)));
         totalLambda = 0;
 
         if (tail == null) return;
@@ -353,7 +355,7 @@ public class CableJoint : CableBase
                 //if both objects are static no impulse needs to be calculated
                 slippingNodesStart.node.effectiveMassDenominator = invMass1 + invMass2 + inertiaTerm1 + inertiaTerm2;
 
-                SlipSolve(slippingNodesStart, slippingCount);
+                //SlipSolve(slippingNodesStart, slippingCount);
                 slippingNodesStart = null;
             }
         }
@@ -424,7 +426,7 @@ public class CableJoint : CableBase
             }
         }
         //print(SlipSolutionTest(start.node, count));
-        print("solved with " + iterations + " iterations");
+        //print("solved with " + iterations + " iterations");
     }
 
     public void CableJointsSolve(CableBase start)
@@ -557,6 +559,23 @@ public class CableJoint : CableBase
                     tail.RB2D.angularVelocity += Mathf.Rad2Deg * lambda * Vector3.Cross(tail.tangentOffsetHead, this.cableUnitVector).z / tail.RB2D.inertia;
                 }
             }
+
+            currentNode = this;
+            for (int i = 0; i < slipNodesCount; i++)
+            {
+                if (currentNode.RB2D != null && !currentNode.RB2D.isKinematic)
+                {
+                    currentNode.RB2D.velocity -= lambda * currentNode.node.cableUnitVector / currentNode.RB2D.mass;
+                    currentNode.RB2D.velocity += lambda * currentNode.head.node.cableUnitVector / currentNode.RB2D.mass;
+
+                    if (currentNode.RB2D.inertia != 0)
+                    {
+                        currentNode.RB2D.angularVelocity -= Mathf.Rad2Deg * lambda * Vector3.Cross(currentNode.tangentOffsetTail, currentNode.node.cableUnitVector).z / currentNode.RB2D.inertia;
+                        currentNode.RB2D.angularVelocity += Mathf.Rad2Deg * lambda * Vector3.Cross(currentNode.tangentOffsetHead, currentNode.head.node.cableUnitVector).z / currentNode.RB2D.inertia;
+                    }
+                }
+                currentNode = currentNode.head;
+            }
         }
     }
 
@@ -681,7 +700,7 @@ public class CableJoint : CableBase
         if ((this.linkType == LinkType.Rolling) && (hitPulley == this.pulley)) return false;
         if ((this.tail != null) && (this.tail.linkType == LinkType.Rolling) && (this.tail.node.pulley == hitPulley)) return false;
 
-        newNode = ((GameObject)Instantiate(nodePrefab, hitPulley.PulleyCentreGeometrical, Quaternion.identity)).GetComponent<CableJoint>();
+        newNode = ((GameObject)Instantiate(nodePrefab, hitPulley.PulleyCentreGeometrical, Quaternion.identity, hitPulley.transform)).GetComponent<CableJoint>();
 
         newNode.pulley = hitPulley;
 
