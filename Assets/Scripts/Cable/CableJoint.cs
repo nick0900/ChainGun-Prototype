@@ -11,6 +11,7 @@ public class CableJoint : CableBase
     int kin = 0;
 
     [HideInInspector] public float totalLambda = 0;
+    [HideInInspector] public float totalLambdaError = 0;
     [HideInInspector] public float lambda = 0;
 
     private float effectiveMassDenominator = 0;
@@ -191,9 +192,10 @@ public class CableJoint : CableBase
     void InitializeNodes()
     {
         previousTrueTension = Mathf.Abs(totalLambda);
-        if ((head != null) && (tail != null))
-            print(this.totalLambda + " " + head.node.totalLambda + " " + (Mathf.Abs(this.totalLambda) - Mathf.Abs(head.node.totalLambda)));
+        //if ((head != null) && (tail != null))
+            //print(this.totalLambda + " " + head.node.totalLambda + " " + (Mathf.Abs(this.totalLambda) - Mathf.Abs(head.node.totalLambda)));
         totalLambda = 0;
+        totalLambdaError = 0;
 
         if (tail == null) return;
 
@@ -244,8 +246,6 @@ public class CableJoint : CableBase
         //{
         //    this.slippingMass = (tail.RB2D.mass + head.RB2D.mass);
         //}
-
-        estimatedTension = TensionEstimation(this);
     }
 
     void FrictionFactorUpdate(float slipSign)
@@ -270,6 +270,8 @@ public class CableJoint : CableBase
     public void CableSlipUpdate(ref CableBase slippingNodesStart, ref int slippingCount)
     {
         if (tail == null) return;
+        estimatedTension = TensionEstimation(this);
+
         if (head != null)
         {
             float slidingCondition = 0.0f;
@@ -286,6 +288,7 @@ public class CableJoint : CableBase
             }
 
             slipping = slidingCondition > 0.0f;
+            slipping = true;
         }
         else
         {
@@ -328,7 +331,7 @@ public class CableJoint : CableBase
 
     float TensionEstimation(CableJoint currentNode)
     {
-        return (currentNode.currentLength - currentNode.restLength) / currentNode.effectiveMassDenominator;
+        return currentNode.currentLength - currentNode.restLength;
     }
 
     bool SlipSolutionTest(CableJoint start, int count)
@@ -359,8 +362,8 @@ public class CableJoint : CableBase
             {
 
                 currentNode = currentNode.head.node;
-                currentNode.SlipA = FrictionCompounded(start, i) * currentNode.effectiveMassDenominator / start.node.effectiveMassDenominator;
-                currentNode.SlipB = currentNode.effectiveMassDenominator * (currentNode.estimatedTension - FrictionCompounded(start, i) * start.node.estimatedTension);
+                currentNode.SlipA = FrictionCompounded(start, i);
+                currentNode.SlipB = currentNode.estimatedTension - FrictionCompounded(start, i) * start.node.estimatedTension;
 
                 sumA += currentNode.SlipA;
                 sumB += currentNode.SlipB;
@@ -402,9 +405,11 @@ public class CableJoint : CableBase
             //impulse intensity:  
             lambda = -(velConstraintValue + velocitySteering) / effectiveMassDenominator;
 
+            lambda += totalLambdaError;
+
             //accumulate and clamp impulse
             float tempLambda = totalLambda;
-            totalLambda = Mathf.Min(0, totalLambda + lambda);
+            totalLambda = Mathf.Min(totalLambdaError, totalLambda + lambda);
             lambda = totalLambda - tempLambda;
 
             //apply impulse
@@ -435,53 +440,12 @@ public class CableJoint : CableBase
         if (!slipping) return;
 
         //calculate balancing impulse
-        float lambdaErr = (this.lambda - this.frictionFactor * head.node.lambda) / (1 + this.frictionFactor);
-        //print(lambdaErr);
+        float lambdaErr = (this.totalLambda - this.frictionFactor * head.node.totalLambda) / (1 + this.frictionFactor);
+        print("hi: " + this.totalLambda + " " + head.node.totalLambda + " " + lambdaErr);
 
-        //uppdate total lambdas
-        //this.totalLambda -= lambdaErr;
-        //head.node.totalLambda += lambdaErr;
-
-        //float tempLambda = this.totalLambda;
-        //this.totalLambda = Mathf.Min(0, this.totalLambda + lambdaErrOrig);
-        //float lambdaErr = totalLambda - tempLambda;
-
-        //apply impulse
-        if (tail.RB2D != null && !tail.RB2D.isKinematic)
-        {
-            tail.RB2D.velocity -= lambdaErr * this.cableUnitVector / tail.RB2D.mass;
-
-            if (tail.RB2D.inertia != 0)
-            {
-                tail.RB2D.angularVelocity -= Mathf.Rad2Deg * lambdaErr * Vector3.Cross(tail.tangentOffsetHead, this.cableUnitVector).z / tail.RB2D.inertia;
-            }
-        }
-
-        if (this.RB2D != null && !this.RB2D.isKinematic)
-        {
-            this.RB2D.velocity += lambdaErr * this.cableUnitVector / this.RB2D.mass;
-            this.RB2D.velocity -= lambdaErr * head.node.cableUnitVector / this.RB2D.mass;
-
-            if (this.RB2D.inertia != 0)
-            {
-                this.RB2D.angularVelocity += Mathf.Rad2Deg * lambdaErr * Vector3.Cross(this.tangentOffsetTail, this.cableUnitVector).z / this.RB2D.inertia;
-                this.RB2D.angularVelocity -= Mathf.Rad2Deg * lambdaErr * Vector3.Cross(this.tangentOffsetTail, head.node.cableUnitVector).z / this.RB2D.inertia;
-            }
-        }
-
-        //tempLambda = head.node.totalLambda;
-        //head.node.totalLambda = Mathf.Min(0, this.totalLambda + lambdaErrOrig);
-        //lambdaErr = totalLambda - tempLambda;
-
-        if (head.RB2D != null && !head.RB2D.isKinematic)
-        {
-            head.RB2D.velocity += lambdaErr * head.node.cableUnitVector / head.RB2D.mass;
-
-            if (head.RB2D.inertia != 0)
-            {
-                head.RB2D.angularVelocity += Mathf.Rad2Deg * lambdaErr * Vector3.Cross(head.tangentOffsetHead, head.node.cableUnitVector).z / head.RB2D.inertia;
-            }
-        }
+        this.totalLambdaError = -lambdaErr;
+        head.node.totalLambdaError = lambdaErr;
+        
     }
 
     public void TriggerBoxUpdate()
@@ -551,7 +515,7 @@ public class CableJoint : CableBase
         if ((this.linkType == LinkType.Rolling) && (hitPulley == this.pulley)) return false;
         if ((this.tail != null) && (this.tail.linkType == LinkType.Rolling) && (this.tail.node.pulley == hitPulley)) return false;
 
-        newNode = ((GameObject)Instantiate(nodePrefab, hitPulley.PulleyCentreGeometrical, Quaternion.identity)).GetComponent<CableJoint>();
+        newNode = ((GameObject)Instantiate(nodePrefab, hitPulley.PulleyCentreGeometrical, Quaternion.identity, hitPulley.transform)).GetComponent<CableJoint>();
 
         newNode.pulley = hitPulley;
 
