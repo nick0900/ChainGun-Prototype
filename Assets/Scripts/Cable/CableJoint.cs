@@ -312,6 +312,7 @@ public class CableJoint : CableBase
         else
         {
             //A group is complete and tensions may be balanced within the group
+            //Recalculate the effective mass denominator for the whole group
             if (slippingNodesStart != null)
             {
                 slippingNodesStart.node.slipEndNode = this;
@@ -575,60 +576,6 @@ public class CableJoint : CableBase
                     }
                 }
                 currentNode = currentNode.head;
-            }
-        }
-    }
-
-    public void CablePulleyTensionBalance()
-    {
-        if (!slipping) return;
-
-        //calculate balancing impulse
-        float lambdaErr = (this.lambda - this.frictionFactor * head.node.lambda) / (1 + this.frictionFactor);
-        //print(lambdaErr);
-
-        //uppdate total lambdas
-        //this.totalLambda -= lambdaErr;
-        //head.node.totalLambda += lambdaErr;
-
-        //float tempLambda = this.totalLambda;
-        //this.totalLambda = Mathf.Min(0, this.totalLambda + lambdaErrOrig);
-        //float lambdaErr = totalLambda - tempLambda;
-
-        //apply impulse
-        if (tail.RB2D != null && !tail.RB2D.isKinematic)
-        {
-            tail.RB2D.velocity -= lambdaErr * this.cableUnitVector / tail.RB2D.mass;
-
-            if (tail.RB2D.inertia != 0)
-            {
-                tail.RB2D.angularVelocity -= Mathf.Rad2Deg * lambdaErr * Vector3.Cross(tail.tangentOffsetHead, this.cableUnitVector).z / tail.RB2D.inertia;
-            }
-        }
-
-        if (this.RB2D != null && !this.RB2D.isKinematic)
-        {
-            this.RB2D.velocity += lambdaErr * this.cableUnitVector / this.RB2D.mass;
-            this.RB2D.velocity -= lambdaErr * head.node.cableUnitVector / this.RB2D.mass;
-
-            if (this.RB2D.inertia != 0)
-            {
-                this.RB2D.angularVelocity += Mathf.Rad2Deg * lambdaErr * Vector3.Cross(this.tangentOffsetTail, this.cableUnitVector).z / this.RB2D.inertia;
-                this.RB2D.angularVelocity -= Mathf.Rad2Deg * lambdaErr * Vector3.Cross(this.tangentOffsetTail, head.node.cableUnitVector).z / this.RB2D.inertia;
-            }
-        }
-
-        //tempLambda = head.node.totalLambda;
-        //head.node.totalLambda = Mathf.Min(0, this.totalLambda + lambdaErrOrig);
-        //lambdaErr = totalLambda - tempLambda;
-
-        if (head.RB2D != null && !head.RB2D.isKinematic)
-        {
-            head.RB2D.velocity += lambdaErr * head.node.cableUnitVector / head.RB2D.mass;
-
-            if (head.RB2D.inertia != 0)
-            {
-                head.RB2D.angularVelocity += Mathf.Rad2Deg * lambdaErr * Vector3.Cross(head.tangentOffsetHead, head.node.cableUnitVector).z / head.RB2D.inertia;
             }
         }
     }
