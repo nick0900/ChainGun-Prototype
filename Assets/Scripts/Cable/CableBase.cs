@@ -57,23 +57,33 @@ abstract public class CableBase : MonoBehaviour
 
     public void ChainUpdate(CableBase start)
     {
-        start.node.CableSegmentUpdate();
+        start.node.CableSegmentPreSlipUpdate();
         if (start.head != null)
         {
             ChainUpdate(start.head);
         }
     }
 
-    public void ChainSlipUpdate(CableBase start)
+    public void ConstraintUpdate(CableBase start)
     {
-        ChainSlipUpdateRec(start, null, 0);
+        ChainSlipUpdateRec(start);
+        ChainConstraintUpdateRec(start, null, 0);
     }
-    void ChainSlipUpdateRec(CableBase start, CableBase slippingNodesStart, int slippingCount)
+    void ChainSlipUpdateRec(CableBase start)
     {
-        start.node.CableSlipUpdate(ref slippingNodesStart, ref slippingCount);
+        start.node.CableSlipConditionsUpdate();
         if (start.head != null)
         {
-            ChainSlipUpdateRec(start.head, slippingNodesStart, slippingCount);
+            ChainSlipUpdateRec(start.head);
+        }
+    }
+
+    void ChainConstraintUpdateRec(CableBase start, CableBase slippingNodesStart, int slippingCount)
+    {
+        start.node.CableConstraintsInitialization(ref slippingNodesStart, ref slippingCount);
+        if (start.head != null)
+        {
+            ChainConstraintUpdateRec(start.head, slippingNodesStart, slippingCount);
         }
     }
 
