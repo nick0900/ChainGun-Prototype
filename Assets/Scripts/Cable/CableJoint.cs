@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Burst.CompilerServices;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -61,7 +62,7 @@ public class CableJoint : CableBase
     public Rigidbody2D rb2dEnd = null;
     public override Rigidbody2D RB2D { get { return rb2dEnd == null ? pulley.PulleyAttachedRigidBody : rb2dEnd; } }
 
-    private float previousTrueTension = 0.0f;
+    private float segmentTension = 0.0f;
     private float frictionFactor = 1.0f;
     private float SlipA = 0.0f;
     private float SlipB = 0.0f;
@@ -197,9 +198,6 @@ public class CableJoint : CableBase
 
     void InitializeNodes()
     {
-        this.previousTrueTension = Mathf.Abs(totalLambda);
-        this.totalLambda = 0;
-
         if (tail == null) return;
 
         Vector3 distVector = this.CableStartPosition - this.CableEndPosition;
@@ -207,25 +205,13 @@ public class CableJoint : CableBase
         this.cableUnitVector = distVector.normalized;
 
         this.positionError = currentLength - restLength;
+
+        this.segmentTension = TensionEstimation(this);
     }
 
     void FrictionFactorUpdate(float slipSign)
     {
-        switch (this.pulley.CableMeshPrimitiveType)
-        {
-            case CableMeshInterface.CMPrimitives.Circle:
-                //!!!!!!!!!!! Current implementation works only for one wrap around pulley !!!!!!!!!!!!!!!!!!!!
-                float wrapAngle = Vector2.SignedAngle(head.node.cableUnitVector, this.cableUnitVector);
-                if (wrapAngle < 0) wrapAngle = 360.0f + wrapAngle;
-                wrapAngle *= Mathf.Deg2Rad;
-
-                frictionFactor = Mathf.Exp(slipSign * (slipping ? CableKineticFriction : CableStaticFriction) * wrapAngle);
-                break;
-
-            default:
-                frictionFactor = 1.0f;
-                break;
-        }
+        frictionFactor = this.pulley.FrictionFactor(slipSign, this.slipping, this.storedLength, CableWidth);
     }
 
     public void CableSlipConditionsUpdate()
@@ -234,20 +220,35 @@ public class CableJoint : CableBase
         if (head != null)
         {
             float slidingCondition = 0.0f;
-            //The final impulses from previous timestep used for the most accurate determination of cable slipping.
-            if (this.previousTrueTension <= head.node.previousTrueTension)
+            float tension1 = this.segmentTension;
+            float tension2 = head.node.segmentTension;
+            
+            if (tension1 <= tension2)
             {
                 FrictionFactorUpdate(1.0f);
-                slidingCondition = head.node.previousTrueTension - this.previousTrueTension * this.frictionFactor;
+                slidingCondition = tension2 - tension1 * this.frictionFactor;
             }
             else
             {
                 FrictionFactorUpdate(-1.0f);
-                slidingCondition = this.previousTrueTension * this.frictionFactor - head.node.previousTrueTension;
+                slidingCondition = tension1 * this.frictionFactor - tension2;
             }
 
-            slipping = slidingCondition > 0.0f;
-            slipping = true;
+            //print(tension1 + "   " + tension2 + "   " + this.frictionFactor + "   " + slidingCondition);
+
+            if (slidingCondition > 0.0f)
+            {
+                if (!slipping)
+                {
+                    FrictionFactorUpdate((tension1 <= tension2) ? 1.0f : -1.0f);
+                }
+                slipping = true;
+            }
+            else
+            { 
+                slipping = false; 
+            }
+
         }
         else
         {
@@ -278,6 +279,7 @@ public class CableJoint : CableBase
             //Recalculate the effective mass denominator for the whole group
             if (slippingNodesStart != null)
             {
+                slippingNodesStart.node.positionError += this.positionError;
                 slippingNodesStart.node.slipNodesCount = slippingCount;
                 SlippingBalanceTension(slippingNodesStart);
                 InverseMassDenominatorCalculationGroup(slippingNodesStart);
@@ -289,6 +291,7 @@ public class CableJoint : CableBase
                 InverseMassDenominatorCalculation();
             }
         }
+        this.totalLambda = 0;
     }
 
     float FrictionCompounded(CableBase start, int index)
@@ -305,13 +308,13 @@ public class CableJoint : CableBase
 
     float TensionEstimation(CableJoint currentNode)
     {
-        return currentNode.currentLength - currentNode.restLength;
+        return math.max(currentNode.currentLength - currentNode.restLength, 0.0f);
     }
 
     void SlippingBalanceTension(CableBase groupStart)
     {
         int count = groupStart.node.slipNodesCount;
-        float startTension = TensionEstimation(groupStart.node);
+        float startTension = groupStart.node.segmentTension;
 
         CableJoint currentNode = groupStart.node;
         float sumA = 0.0f;
@@ -321,7 +324,7 @@ public class CableJoint : CableBase
 
             currentNode = currentNode.head.node;
             currentNode.SlipA = FrictionCompounded(groupStart, i);
-            currentNode.SlipB = TensionEstimation(currentNode) - FrictionCompounded(groupStart, i) * startTension;
+            currentNode.SlipB = currentNode.node.segmentTension - FrictionCompounded(groupStart, i) * startTension;
 
             sumA += currentNode.SlipA;
             sumB += currentNode.SlipB;
@@ -377,48 +380,50 @@ public class CableJoint : CableBase
         //larger masses result in a smaller denominator. a static object with infinite mass will give terms of zero
         //if both objects are static no impulse needs to be calculated
         inverseEffectiveMassDenominator = invMass1 + invMass2 + inertiaTerm1 + inertiaTerm2;
+        inverseEffectiveMassDenominator = 1 / inverseEffectiveMassDenominator;
     }
 
     Vector2 M(int i, int max, CableBase node, CableBase rootNode)
     {
         if (i == 0)
         {
-            return FrictionCompounded(rootNode, i + 1) * node.head.node.cableUnitVector / node.RB2D.mass;
+            return -node.head.node.cableUnitVector / node.RB2D.mass;
         }
         if (i == max)
         {
-            return -FrictionCompounded(rootNode, i) * node.node.cableUnitVector / node.RB2D.mass;
+            return FrictionCompounded(rootNode, i - 2) * node.node.cableUnitVector / node.RB2D.mass;
         }
-        return (FrictionCompounded(rootNode, i + 1) * node.head.node.cableUnitVector - FrictionCompounded(rootNode, i) * node.node.cableUnitVector) / node.RB2D.mass;
+        return (FrictionCompounded(rootNode, i - 2) * node.node.cableUnitVector - FrictionCompounded(rootNode, i - 1) * node.head.node.cableUnitVector) / node.RB2D.mass;
     }
     Vector3 I(int i, int max, CableBase node, CableBase rootNode)
     {
         if (i == 0)
         {
-            return FrictionCompounded(rootNode, i + 1) * Vector3.Cross(node.node.tangentOffsetHead, node.head.node.cableUnitVector) / node.RB2D.inertia;
+            return -Vector3.Cross(node.node.tangentOffsetHead, node.head.node.cableUnitVector) / node.RB2D.inertia;
         }
         if (i == max)
         {
-            return -FrictionCompounded(rootNode, i) * Vector3.Cross(node.node.tangentOffsetTail, node.node.cableUnitVector) / node.RB2D.inertia;
+            return FrictionCompounded(rootNode, i - 2) * Vector3.Cross(node.node.tangentOffsetTail, node.node.cableUnitVector) / node.RB2D.inertia;
         }
-        return (FrictionCompounded(rootNode, i + 1) * Vector3.Cross(node.node.tangentOffsetHead, node.head.node.cableUnitVector) - FrictionCompounded(rootNode, i) * Vector3.Cross(node.node.tangentOffsetTail, node.node.cableUnitVector)) / node.RB2D.inertia;
+        return (FrictionCompounded(rootNode, i - 2) * Vector3.Cross(node.node.tangentOffsetTail, node.node.cableUnitVector) - FrictionCompounded(rootNode, i - 1) * Vector3.Cross(node.node.tangentOffsetHead, node.head.node.cableUnitVector)) / node.RB2D.inertia;
     }
     void InverseMassDenominatorCalculationGroup(CableBase groupStart)
     {
+        print(groupStart.node.frictionFactor);
         int slippingCount = groupStart.node.slipNodesCount;
 
-        Vector2[] massDenominators = new Vector2[slippingCount];
-        Vector3[] inertiaDenominators = new Vector3[slippingCount];
+        Vector2[] massDenominators = new Vector2[slippingCount + 2];
+        Vector3[] inertiaDenominators = new Vector3[slippingCount + 2];
         CableBase current = groupStart.tail;
         //pre calculate the individual contributions of every body
-        for (int i = 0; i <= slippingCount; i++)
+        for (int i = 0; i <= slippingCount + 1; i++)
         {
             if (current.RB2D != null && !current.RB2D.isKinematic)
             {
-                massDenominators[i] = M(i, slippingCount, current, groupStart);
+                massDenominators[i] = M(i, slippingCount + 1, current, groupStart);
                 if (current.RB2D.inertia != 0)
                 {
-                    inertiaDenominators[i] = I(i, slippingCount, current, groupStart);
+                    inertiaDenominators[i] = I(i, slippingCount + 1, current, groupStart);
                 }
                 else
                 {
@@ -439,11 +444,11 @@ public class CableJoint : CableBase
         groupStart.node.inverseEffectiveMassDenominator = 0;
         current = groupStart;
         //summize the total projected constraint mass denominator
-        for (int i = 1; i <= slippingCount; i++)
+        for (int i = 1; i <= slippingCount + 1; i++)
         {
             groupStart.node.inverseEffectiveMassDenominator += Vector2.Dot(massDenominators[i] - massDenominators[i - 1], current.node.cableUnitVector)
-                           + Vector3.Dot(inertiaDenominators[i], Vector3.Cross(current.node.tangentOffsetTail, current.node.cableUnitVector))
-                           - Vector3.Dot(inertiaDenominators[i - 1], Vector3.Cross(current.tail.node.tangentOffsetHead, current.node.cableUnitVector));
+                           + Vector3.Dot(inertiaDenominators[i], Vector3.Cross(current.tangentOffsetTail, current.node.cableUnitVector))
+                           - Vector3.Dot(inertiaDenominators[i - 1], Vector3.Cross(current.tail.tangentOffsetHead, current.node.cableUnitVector));
 
             current = current.head;
         }
@@ -490,7 +495,7 @@ public class CableJoint : CableBase
             float velocitySteering = bias * positionError / Time.fixedDeltaTime;
             
             //impulse intensity:  
-            lambda = -(velConstraintValue + velocitySteering) / inverseEffectiveMassDenominator;
+            lambda = -(velConstraintValue + velocitySteering) * inverseEffectiveMassDenominator;
 
             //accumulate and clamp impulse
             float tempLambda = totalLambda;
@@ -529,17 +534,17 @@ public class CableJoint : CableBase
             //Sum the current velocity errors
             float velocityError = 0;
             CableBase segment = this;
-            for (int i = 0; i < slipNodesCount; i++)
+            for (int i = 0; i < slipNodesCount + 1; i++)
             {
-                velocityError += Vector2.Dot((this.RB2D != null ? this.RB2D.GetPointVelocity(CableEndPosition) : Vector2.zero) -
-                             (tail.RB2D != null ? tail.RB2D.GetPointVelocity(CableStartPosition) : Vector2.zero), this.cableUnitVector);
+                velocityError += Vector2.Dot((segment.tail.RB2D != null ? segment.tail.RB2D.GetPointVelocity(segment.CableStartPosition) : Vector2.zero) -
+                             (segment.RB2D != null ? segment.RB2D.GetPointVelocity(segment.CableEndPosition) : Vector2.zero), segment.node.cableUnitVector);
                 segment = segment.head;
             }
 
             float velocitySteering = bias * positionError / Time.fixedDeltaTime;
 
             //impulse intensity:  
-            lambda = -(velocityError + velocitySteering) / inverseEffectiveMassDenominator;
+            lambda = -(velocityError + velocitySteering) * inverseEffectiveMassDenominator;
 
             //accumulate and clamp impulse
             float tempLambda = totalLambda;
@@ -548,29 +553,30 @@ public class CableJoint : CableBase
 
             //apply impulse
             segment = this;
-            for (int i = 0; i < slipNodesCount; i++)
+            for (int i = 0; i < slipNodesCount + 1; i++)
             {
-                float frictionFactorScalar = FrictionCompounded(this,i);
+                float frictionFactorScalar = FrictionCompounded(this,i - 1);
 
                 if (segment.RB2D != null && !segment.RB2D.isKinematic)
                 {
-                    segment.RB2D.velocity += lambda * frictionFactorScalar * segment.node.cableUnitVector / segment.RB2D.mass;
+                    segment.RB2D.velocity -= lambda * frictionFactorScalar * segment.node.cableUnitVector / segment.RB2D.mass;
 
                     if (segment.RB2D.inertia != 0)
                     {
-                        segment.RB2D.angularVelocity += Mathf.Rad2Deg * lambda * frictionFactorScalar * Vector3.Cross(segment.tangentOffsetTail, segment.node.cableUnitVector).z / segment.RB2D.inertia;
+                        segment.RB2D.angularVelocity -= Mathf.Rad2Deg * lambda * frictionFactorScalar * Vector3.Cross(segment.tangentOffsetTail, segment.node.cableUnitVector).z / segment.RB2D.inertia;
                     }
                 }
 
                 if (segment.tail.RB2D != null && !segment.tail.RB2D.isKinematic)
                 {
-                    segment.tail.RB2D.velocity -= lambda * frictionFactorScalar * segment.node.cableUnitVector / segment.tail.RB2D.mass;
+                    segment.tail.RB2D.velocity += lambda * frictionFactorScalar * segment.node.cableUnitVector / segment.tail.RB2D.mass;
 
                     if (segment.tail.RB2D.inertia != 0)
                     {
-                        segment.tail.RB2D.angularVelocity -= Mathf.Rad2Deg * lambda * frictionFactorScalar * Vector3.Cross(segment.tail.tangentOffsetHead, segment.node.cableUnitVector).z / segment.tail.RB2D.inertia;
+                        segment.tail.RB2D.angularVelocity += Mathf.Rad2Deg * lambda * frictionFactorScalar * Vector3.Cross(segment.tail.tangentOffsetHead, segment.node.cableUnitVector).z / segment.tail.RB2D.inertia;
                     }
                 }
+                segment = segment.head;
             }
         }
     }

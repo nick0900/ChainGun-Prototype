@@ -241,9 +241,4 @@ public class BoxPulley : CableMeshInterface
 
         return corners[pointIndex] - PulleyCentreGeometrical;
     }
-
-    public override void CreateChainCollider(float chainWidth)
-    {
-        throw new System.NotImplementedException();
-    }
 }

@@ -51,5 +51,27 @@ abstract public class CableMeshInterface : CableMeshGeneration
     //if useSmallest is set to false distance side will be be based on the orientation.
     abstract public float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth, bool useSmallest);
 
-    abstract public void CreateChainCollider(float cableWidth);
+
+    public bool infiniteFriction = false;
+    public bool constantFriction = false;
+    public float staticFrictionCoeff = 0.2f;
+    public float kineticFrictionCoeff = 0.1f;
+    public float FrictionFactor(float slipSign, bool slipping, float storedCable, float cableWidth)
+    {
+        if (infiniteFriction) return 0.0f;
+
+        if (constantFriction)
+        {
+            float ret = (slipping) ? kineticFrictionCoeff : staticFrictionCoeff;
+            if (slipSign < 0.0f) ret = 1 / ret;
+            return ret;
+        }
+
+        return ShapeFrictionFactor(slipSign, slipping, storedCable, cableWidth);
+    }
+
+    virtual protected float ShapeFrictionFactor(float slipSign, bool slipping, float storedCable, float cableWidth)
+    {
+        return 1.0f;
+    }
 }

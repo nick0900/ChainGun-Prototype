@@ -40,10 +40,6 @@ abstract public class CableBase : MonoBehaviour
 
     public float CableWidth { get { return anchor != null ? anchor.cableWidth : 0.01f; } }
 
-    public float CableStaticFriction { get { return anchor != null ? anchor.StaticFriction : 0.01f; } }
-
-    public float CableKineticFriction { get { return anchor != null ? anchor.KineticFriction : 0.01f; } }
-
     public bool DoSlipSimulation { get { return anchor != null ? anchor.CableSlipping : false; } }
 
     public enum LinkType

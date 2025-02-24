@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 
 [System.Serializable]
@@ -224,8 +225,9 @@ public class CirclePulley : CableMeshInterface
         return tangent;
     }
 
-    public override void CreateChainCollider(float cableWidth)
+    protected override float ShapeFrictionFactor(float slipSign, bool slipping, float storedCable, float cableWidth)
     {
-        throw new System.NotImplementedException();
+        float wrapAngle = storedCable / (Radius + cableWidth / 2);
+        return Mathf.Exp(slipSign * (slipping ? kineticFrictionCoeff : staticFrictionCoeff) * wrapAngle);
     }
 }

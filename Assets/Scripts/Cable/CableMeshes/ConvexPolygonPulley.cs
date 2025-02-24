@@ -392,8 +392,5 @@ public class ConvexPolygonPulley : CableMeshInterface
         return PulleyToWorldTransform(pulleyCollider.points[pointIndex]) - PulleyCentreGeometrical + polygonData[pointIndex].cornerNormal * cableWidth / 2;
     }
 
-    public override void CreateChainCollider(float chainWidth)
-    {
-        throw new System.NotImplementedException();
-    }
+    
 }
