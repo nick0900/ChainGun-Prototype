@@ -211,7 +211,7 @@ public class CirclePulley : CableMeshInterface
             return (pulleyCollider.radius + cableWidth / 2) * angle1 * Mathf.Deg2Rad * (sign ? -1.0f : 1.0f);
         }
 
-        return (pulleyCollider.radius + cableWidth / 2) * angle1 * Mathf.Deg2Rad;
+        return (pulleyCollider.radius + cableWidth / 2) * (sign ? angle2 : angle1) * Mathf.Deg2Rad;
     }
 
     public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableWidth)

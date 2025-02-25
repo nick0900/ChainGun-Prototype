@@ -240,13 +240,17 @@ public class CableJoint : CableBase
             {
                 if (!slipping)
                 {
+                    slipping = true;
                     FrictionFactorUpdate((tension1 <= tension2) ? 1.0f : -1.0f);
                 }
-                slipping = true;
             }
             else
-            { 
-                slipping = false; 
+            {
+                if (slipping)
+                {
+                    slipping = false;
+                    FrictionFactorUpdate((tension1 <= tension2) ? 1.0f : -1.0f);
+                }
             }
 
         }
