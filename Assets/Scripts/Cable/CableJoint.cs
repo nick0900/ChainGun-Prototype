@@ -56,7 +56,7 @@ public class CableJoint : CableBase
     [HideInInspector] public float tangentIdentityTail = -1;
     [HideInInspector] public float tangentIdentityHead = -1;
 
-    public override Vector2 NodePosition { get { return pulley != null ? pulley.PulleyCentreGeometrical : this.transform.position; } }
+    public override Vector2 NodePosition { get { return pulley != null ? (RB2D != null ? RB2D.worldCenterOfMass : pulley.PulleyCentreGeometrical) : this.transform.position; } }
 
     //temporary solution
     public Rigidbody2D rb2dEnd = null;
@@ -189,8 +189,9 @@ public class CableJoint : CableBase
         this.restLength += distTail;
         head.node.restLength -= distHead;
 
-        this.tangentOffsetTail = this.tOffTail;
-        this.tangentOffsetHead = this.tOffHead;
+        Vector2 centreOfMassOffset = (pulley.PulleyCentreGeometrical - NodePosition);
+        this.tangentOffsetTail = this.tOffTail + centreOfMassOffset;
+        this.tangentOffsetHead = this.tOffHead + centreOfMassOffset;
 
         this.tangentIdentityTail = this.tIdentityTail;
         this.tangentIdentityHead = this.tIdentityHead;
