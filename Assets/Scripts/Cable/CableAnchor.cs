@@ -15,12 +15,6 @@ public class CableAnchor : CableBase
 
     [SerializeField] private float chainTriggerWidth = 0.5f;
 
-    public bool CableSlipping = false;
-
-    public float StaticFriction = 0.1f;
-
-    public float KineticFriction = 0.05f;
-
     public uint solveIterations = 10;
 
     void Start()

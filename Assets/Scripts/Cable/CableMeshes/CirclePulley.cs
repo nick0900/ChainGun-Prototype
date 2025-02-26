@@ -86,8 +86,8 @@ public class CirclePulley : CableMeshInterface
 
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
-        Vector2 cableVector = headPrevious - tailPrevious;
-        Vector2 centreVector = previousPosition - tailPrevious;
+        Vector2 cableVector = tailPrevious - PulleyCentreGeometrical;
+        Vector2 centreVector = headPrevious - PulleyCentreGeometrical;
 
         return Vector2.SignedAngle(cableVector, centreVector) >= 0;
     }
@@ -110,10 +110,10 @@ public class CirclePulley : CableMeshInterface
     {
         Vector2 d = P2 - P1;
 
-        if (d.magnitude <= r2 + cableWidth / 2)
+        if (d.magnitude < r2 + cableWidth / 2)
         {
-            print("fuck");
-            throw new System.Exception();
+            print("previously fuck");
+            d = (d / d.magnitude) * (r2 + cableWidth / 2);
         }
 
         float alpha = d.x >= 0 ? Mathf.Asin(d.y / d.magnitude) : Mathf.PI - Mathf.Asin(d.y / d.magnitude);
@@ -124,7 +124,8 @@ public class CirclePulley : CableMeshInterface
 
         tangentOffset2 = (r2 + cableWidth / 2) * new Vector2(Mathf.Cos(alpha), Mathf.Sin(alpha));
 
-        angle = alpha * Mathf.Rad2Deg - pulleyCollider.transform.rotation.eulerAngles.z + 180.0f;
+        float globalAngle = -Vector2.SignedAngle(tangentOffset2, Vector2.left);
+        angle = globalAngle - pulleyCollider.transform.rotation.eulerAngles.z + 180.0f;
         if (angle > 360.0f) angle -= 360.0f;
         else if (angle < 0) angle += 360.0f;
     }
@@ -142,8 +143,19 @@ public class CirclePulley : CableMeshInterface
 
         if (d.magnitude <= r)
         {
-            print("double fuck");
-            throw new System.Exception();
+            print("previously double fuck");
+            d = d.normalized;
+            tangentOffset1 = d * r1;
+            tangentOffset2 = -d * r2;
+
+            angle1 = -Vector2.SignedAngle(d, Vector2.left) - this.ColliderTransform.rotation.eulerAngles.z + 180.0f;
+            angle2 = -Vector2.SignedAngle(-d, Vector2.left) - pulley2.ColliderTransform.rotation.eulerAngles.z + 180.0f;
+
+            if (angle1 > 360.0f) angle1 -= 360.0f;
+            else if (angle1 < 0) angle1 += 360.0f;
+
+            if (angle2 > 360.0f) angle2 -= 360.0f;
+            else if (angle2 < 0) angle2 += 360.0f;
         }
 
         if (sameOrientation)
@@ -160,7 +172,7 @@ public class CirclePulley : CableMeshInterface
                 tangentOffset1 = d;
                 tangentOffset2 = d;
 
-                float globalAngle = Vector2.SignedAngle(d, Vector2.left);
+                float globalAngle = -Vector2.SignedAngle(d, Vector2.left);
                 angle1 = globalAngle - this.ColliderTransform.rotation.eulerAngles.z + 180.0f;
                 angle2 = globalAngle - pulley2.ColliderTransform.rotation.eulerAngles.z + 180.0f;
 

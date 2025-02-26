@@ -40,8 +40,6 @@ abstract public class CableBase : MonoBehaviour
 
     public float CableWidth { get { return anchor != null ? anchor.cableWidth : 0.01f; } }
 
-    public bool DoSlipSimulation { get { return anchor != null ? anchor.CableSlipping : false; } }
-
     public enum LinkType
     {
         Rolling,

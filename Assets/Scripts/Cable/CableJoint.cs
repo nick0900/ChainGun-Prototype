@@ -414,7 +414,6 @@ public class CableJoint : CableBase
     }
     void InverseMassDenominatorCalculationGroup(CableBase groupStart)
     {
-        print(groupStart.node.frictionFactor);
         int slippingCount = groupStart.node.slipNodesCount;
 
         Vector2[] massDenominators = new Vector2[slippingCount + 2];
@@ -606,24 +605,51 @@ public class CableJoint : CableBase
         {
             AddBack(newNode);
 
+            float tailIdentity = 0.0f;
+            Vector2 tailOffset = Vector2.zero;
             if (newNode.tail.linkType == LinkType.Rolling)
             {
-                TangentAlgorithm(newNode.pulley, newNode.tail.node.pulley, out newNode.tangentOffsetTail, out newNode.tail.tangentOffsetHead, out newNode.tangentIdentityTail, out newNode.tail.node.tangentIdentityHead, newNode.orientation, newNode.tail.node.orientation);
+                tailIdentity = newNode.tail.node.tangentIdentityHead;
+                tailOffset = newNode.tail.tangentOffsetHead;
+                TangentAlgorithm(newNode.pulley, newNode.tail.node.pulley, out newNode.tangentOffsetTail, out tailOffset, out newNode.tangentIdentityTail, out tailIdentity, newNode.orientation, newNode.tail.node.orientation);
             }
             else
             {
                 newNode.tangentOffsetTail = newNode.pulley.PointToShapeTangent(newNode.tail.NodePosition, newNode.orientation, newNode.CableWidth, out newNode.tangentIdentityTail);
             }
 
+            float headIdentity = 0.0f;
+            Vector2 headOffset = Vector2.zero;
             if (this.linkType == LinkType.Rolling)
             {
-                TangentAlgorithm(this.pulley, newNode.pulley, out this.tangentOffsetTail, out newNode.tangentOffsetHead, out this.tangentIdentityTail, out newNode.tangentIdentityHead, this.orientation, newNode.orientation);
+                headIdentity = this.tangentIdentityTail;
+                headOffset = this.tangentOffsetTail;
+                TangentAlgorithm(this.pulley, newNode.pulley, out headOffset, out newNode.tangentOffsetHead, out headIdentity, out newNode.tangentIdentityHead, this.orientation, newNode.orientation);
             }
             else
             {
                 newNode.tangentOffsetHead = newNode.pulley.PointToShapeTangent(this.NodePosition, !newNode.orientation, newNode.CableWidth, out newNode.tangentIdentityHead);
             }
 
+            if (!(newNode.orientation ^ (Vector2.SignedAngle(newNode.tangentOffsetTail, newNode.tangentOffsetHead) < 0)))
+            {
+                newNode.CutChain();
+                Destroy(newNode.gameObject);
+                return;
+            }
+            else
+            {
+                if (newNode.tail.linkType == LinkType.Rolling)
+                {
+                    newNode.tail.node.tangentIdentityHead = tailIdentity;
+                    newNode.tail.tangentOffsetHead = tailOffset;
+                }
+                if (this.linkType == LinkType.Rolling)
+                {
+                    this.tangentIdentityTail = headIdentity;
+                    this.tangentOffsetTail = headOffset;
+                }
+            }
             newNode.storedLength = newNode.pulley.ShapeSurfaceDistance(newNode.tangentIdentityTail, newNode.tangentIdentityHead, newNode.orientation, newNode.CableWidth, false);
 
             newNode.InitializeNodes();
@@ -657,7 +683,7 @@ public class CableJoint : CableBase
 
         newNode.pulley = hitPulley;
 
-        newNode.orientation = newNode.pulley.Orientation(prevCableTailPosition, prevCableThisPosition);
+        newNode.orientation = newNode.pulley.Orientation(CableStartPosition, CableEndPosition);
 
         newNode.anchor = this.anchor;
 
