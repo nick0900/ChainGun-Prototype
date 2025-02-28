@@ -180,7 +180,7 @@ public class CableJoint : CableBase
 
         float distTail = this.pulley.ShapeSurfaceDistance(this.tangentIdentityTail, this.tIdentityTail, this.orientation, this.CableWidth, true);
         float distHead = this.pulley.ShapeSurfaceDistance(this.tangentIdentityHead, this.tIdentityHead, this.orientation, this.CableWidth, true);
-
+        
         // Update stored lengths:
         this.storedLength -= distTail;
         this.storedLength += distHead;
@@ -540,8 +540,9 @@ public class CableJoint : CableBase
             CableBase segment = this;
             for (int i = 0; i < slipNodesCount + 1; i++)
             {
-                velocityError += Vector2.Dot((segment.tail.RB2D != null ? segment.tail.RB2D.GetPointVelocity(segment.CableStartPosition) : Vector2.zero) -
-                             (segment.RB2D != null ? segment.RB2D.GetPointVelocity(segment.CableEndPosition) : Vector2.zero), segment.node.cableUnitVector);
+                velocityError += Vector2.Dot(segment.tail.RB2D.velocity - segment.RB2D.velocity, segment.node.cableUnitVector) +
+                    segment.tail.RB2D.angularVelocity * Vector3.Cross(segment.tail.tangentOffsetHead, segment.node.cableUnitVector).z -
+                    segment.RB2D.angularVelocity * Vector3.Cross(segment.tangentOffsetTail, segment.node.cableUnitVector).z;
                 segment = segment.head;
             }
 

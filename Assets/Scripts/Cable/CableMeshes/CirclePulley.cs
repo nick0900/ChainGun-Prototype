@@ -219,6 +219,17 @@ public class CirclePulley : CableMeshInterface
             {
                 angle1 = angle2;
             }
+            // needed for edge case where the smallest angle crosses over the angle boundaries
+            if (sign)
+            {
+                if (((currIdentity - angle1) <= 0.0f) && ((prevIdentity + angle1) >= 360.0f))
+                    sign = false;
+            }
+            else
+            {
+                if (((prevIdentity - angle1) <= 0.0f) && ((currIdentity + angle1) >= 360.0f))
+                    sign = true;
+            }
 
             return (pulleyCollider.radius + cableWidth / 2) * angle1 * Mathf.Deg2Rad * (sign ? -1.0f : 1.0f);
         }
