@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 [System.Serializable]
@@ -73,5 +74,92 @@ abstract public class CableMeshInterface : CableMeshGeneration
     virtual protected float ShapeFrictionFactor(float slipSign, bool slipping, float storedCable, float cableWidth)
     {
         return 1.0f;
+    }
+
+    abstract public Vector2 FurthestPoint(Vector2 direction);
+
+    public struct cableIntersection
+    {
+        public bool intersecting;
+        public float distance;
+        public Vector2 normal;
+    }
+
+    static private Vector2 Support(CableMeshInterface s1, CableMeshInterface s2, Vector2 d)
+    {
+        return s1.FurthestPoint(d) - s2.FurthestPoint(-d);
+    }
+
+    static private Vector2 TripleProd(Vector3 v1, Vector3 v2, Vector3 v3)
+    {
+        return Vector3.Cross(Vector3.Cross(v1, v2), v3);
+    }
+
+    static private bool HandleSimplex(ref List<Vector2> simplex, ref Vector2 d)
+    {
+        if (simplex.Count == 2)
+        {
+            Vector2 A = simplex[1];
+            Vector2 B = simplex[0];
+
+            Vector2 AB = B - A;
+            Vector2 AO = -A;
+            d = TripleProd(AB, AO, AB).normalized;
+            return false;
+        }
+        {
+            Vector2 A = simplex[2];
+            Vector2 B = simplex[1];
+            Vector2 C = simplex[0];
+
+            Vector2 AB = B - A;
+            Vector2 AC = C - A;
+            Vector2 AO = -A;
+            Vector2 ABperp = TripleProd(AC, AB, AB);
+            Vector2 ACperp = TripleProd(AB, AC, AC);
+
+            if (Vector2.Dot(ABperp, AO) > 0)
+            {
+                d = ABperp.normalized;
+                simplex.RemoveAt(0);
+                return false;
+            }
+            else if (Vector2.Dot(ACperp, AO) > 0)
+            {
+                d = ACperp.normalized;
+                simplex.RemoveAt(1);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    static public cableIntersection GJKIntersection(CableMeshInterface s1, CableMeshInterface s2)
+    {
+        cableIntersection result = new cableIntersection();
+
+        Vector2 d = (s2.PulleyCentreGeometrical - s1.PulleyCentreGeometrical).normalized;
+
+        List<Vector2> simplex = new List<Vector2>();
+        simplex.Add(Support(s1, s2, d));
+        d = -simplex[0].normalized;
+
+        while (true)
+        {
+            Vector2 A = Support(s1, s2, d);
+            if (Vector2.Dot(A, d) < 0)
+            {
+                result.intersecting = false;
+                return result;
+            }
+            
+            simplex.Add(A);
+            if (HandleSimplex(ref simplex, ref d))
+            {
+                result.intersecting = true;
+                return result;
+            }
+
+        }
     }
 }

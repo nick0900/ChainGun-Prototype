@@ -392,5 +392,21 @@ public class ConvexPolygonPulley : CableMeshInterface
         return PulleyToWorldTransform(pulleyCollider.points[pointIndex]) - PulleyCentreGeometrical + polygonData[pointIndex].cornerNormal * cableWidth / 2;
     }
 
-    
+    public override Vector2 FurthestPoint(Vector2 direction)
+    {
+        Vector2 point = pulleyCollider.transform.TransformPoint(pulleyCollider.points[0]);
+        float maxDot = Vector2.Dot(point, direction);
+
+        for (int i = 1; i < pulleyCollider.points.Length; i++)
+        {
+            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(pulleyCollider.points[i]);
+            float tempDot = Vector2.Dot(tempPoint, direction);
+            if (tempDot > maxDot)
+            {
+                point = tempPoint;
+                maxDot = tempDot;
+            }
+        }
+        return point;
+    }
 }

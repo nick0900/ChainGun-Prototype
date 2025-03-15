@@ -253,4 +253,9 @@ public class CirclePulley : CableMeshInterface
         float wrapAngle = storedCable / (Radius + cableWidth / 2);
         return Mathf.Exp(slipSign * (slipping ? kineticFrictionCoeff : staticFrictionCoeff) * wrapAngle);
     }
+
+    public override Vector2 FurthestPoint(Vector2 direction)
+    {
+        return WorldPosition + direction * Radius;
+    }
 }
