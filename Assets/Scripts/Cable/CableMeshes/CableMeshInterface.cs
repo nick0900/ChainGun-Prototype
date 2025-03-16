@@ -85,6 +85,8 @@ abstract public class CableMeshInterface : CableMeshGeneration
         public Vector2 normal;
     }
 
+    static float margin = 0.05f;
+
     static private Vector2 Support(CableMeshInterface s1, CableMeshInterface s2, Vector2 d)
     {
         return s1.FurthestPoint(d) - s2.FurthestPoint(-d);
@@ -118,13 +120,13 @@ abstract public class CableMeshInterface : CableMeshGeneration
             Vector2 ABperp = TripleProd(AC, AB, AB);
             Vector2 ACperp = TripleProd(AB, AC, AC);
 
-            if (Vector2.Dot(ABperp, AO) > 0)
+            if (Vector2.Dot(ABperp, AO) > margin)
             {
                 d = ABperp.normalized;
                 simplex.RemoveAt(0);
                 return false;
             }
-            else if (Vector2.Dot(ACperp, AO) > 0)
+            else if (Vector2.Dot(ACperp, AO) > margin)
             {
                 d = ACperp.normalized;
                 simplex.RemoveAt(1);
@@ -147,7 +149,7 @@ abstract public class CableMeshInterface : CableMeshGeneration
         while (true)
         {
             Vector2 A = Support(s1, s2, d);
-            if (Vector2.Dot(A, d) < 0)
+            if (Vector2.Dot(A, d) < -margin)
             {
                 result.intersecting = false;
                 return result;

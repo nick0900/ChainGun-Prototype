@@ -394,12 +394,12 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public override Vector2 FurthestPoint(Vector2 direction)
     {
-        Vector2 point = pulleyCollider.transform.TransformPoint(pulleyCollider.points[0]);
+        Vector2 point = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + pulleyCollider.points[0]);
         float maxDot = Vector2.Dot(point, direction);
 
         for (int i = 1; i < pulleyCollider.points.Length; i++)
         {
-            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(pulleyCollider.points[i]);
+            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + pulleyCollider.points[i]);
             float tempDot = Vector2.Dot(tempPoint, direction);
             if (tempDot > maxDot)
             {

@@ -244,11 +244,11 @@ public class BoxPulley : CableMeshInterface
 
     public override Vector2 FurthestPoint(Vector2 direction)
     {
-        Vector2 point = pulleyCollider.transform.TransformPoint(new Vector2(pulleyCollider.size.x / 2, pulleyCollider.size.y / 2));
+        Vector2 point = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(pulleyCollider.size.x / 2, pulleyCollider.size.y / 2));
         float maxDot = Vector2.Dot(point, direction);
 
         {
-            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(new Vector2(-pulleyCollider.size.x / 2, pulleyCollider.size.y / 2));
+            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(-pulleyCollider.size.x / 2, pulleyCollider.size.y / 2));
             float tempDot = Vector2.Dot(tempPoint, direction);
             if (tempDot > maxDot)
             {
@@ -257,7 +257,7 @@ public class BoxPulley : CableMeshInterface
             }
         }
         {
-            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(new Vector2(pulleyCollider.size.x / 2, -pulleyCollider.size.y / 2));
+            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(pulleyCollider.size.x / 2, -pulleyCollider.size.y / 2));
             float tempDot = Vector2.Dot(tempPoint, direction);
             if (tempDot > maxDot)
             {
@@ -266,7 +266,7 @@ public class BoxPulley : CableMeshInterface
             }
         }
         {
-            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(new Vector2(-pulleyCollider.size.x / 2, -pulleyCollider.size.y / 2));
+            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(-pulleyCollider.size.x / 2, -pulleyCollider.size.y / 2));
             float tempDot = Vector2.Dot(tempPoint, direction);
             if (tempDot > maxDot)
             {

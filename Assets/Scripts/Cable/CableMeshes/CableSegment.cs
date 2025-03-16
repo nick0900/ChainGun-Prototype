@@ -2,12 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using UnityEngine;
+using UnityEngine.Animations.Rigging;
 
 public class CableSegment : CableMeshInterface
 {
     public Transform endpoint;
+    public float width = 0.1f;
 
-    public override Vector2 PulleyCentreGeometrical => throw new System.NotImplementedException();
+    public override Vector2 PulleyCentreGeometrical
+    {
+        get
+        {
+            return this.transform.position + 0.5f * (endpoint.transform.position - this.transform.position);
+        }
+    }
 
     public override Rigidbody2D PulleyAttachedRigidBody => throw new System.NotImplementedException();
 
@@ -73,5 +81,17 @@ public class CableSegment : CableMeshInterface
     protected override void SetupMesh()
     {
         throw new System.NotImplementedException();
+    }
+
+    private void Update()
+    {
+        LineRenderer line = GetComponent<LineRenderer>();
+
+        line.startWidth = width;
+        line.endWidth = width;
+        line.positionCount = 2;
+
+        line.SetPosition(0, this.transform.position);
+        line.SetPosition(1, endpoint.transform.position);
     }
 }
