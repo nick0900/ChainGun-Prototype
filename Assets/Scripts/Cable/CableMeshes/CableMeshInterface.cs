@@ -78,18 +78,41 @@ abstract public class CableMeshInterface : CableMeshGeneration
 
     abstract public Vector2 FurthestPoint(Vector2 direction);
 
-    public struct cableIntersection
+    [System.Serializable]
+    public struct ContactPoint
     {
-        public bool intersecting;
-        public float distance;
-        public Vector2 normal;
+        public Vector2 A;
+        public Vector2 B;
     }
 
-    static float margin = 0.05f;
-
-    static private Vector2 Support(CableMeshInterface s1, CableMeshInterface s2, Vector2 d)
+    [System.Serializable]
+    public struct CablePinchManifold
     {
-        return s1.FurthestPoint(d) - s2.FurthestPoint(-d);
+        public bool hasContact;
+
+        public float depth;
+        public Vector2 normal;
+
+        public CableMeshInterface bodyA;
+        public CableMeshInterface bodyB;
+        public ContactPoint contact1;
+        public ContactPoint contact2;
+        public int contactCount;
+    }
+
+    struct SupportPoint
+    {
+        public Vector2 res;
+        public Vector2 A;
+        public Vector2 B;
+    }
+    static private SupportPoint Support(CableMeshInterface s1, CableMeshInterface s2, Vector2 d)
+    {
+        SupportPoint support = new SupportPoint();
+        support.A = s1.FurthestPoint(d);
+        support.B = s2.FurthestPoint(-d);
+        support.res = support.A - support.B;
+        return support;
     }
 
     static private Vector2 TripleProd(Vector3 v1, Vector3 v2, Vector3 v3)
@@ -97,12 +120,12 @@ abstract public class CableMeshInterface : CableMeshGeneration
         return Vector3.Cross(Vector3.Cross(v1, v2), v3);
     }
 
-    static private bool HandleSimplex(ref List<Vector2> simplex, ref Vector2 d)
+    static private bool HandleSimplex(ref List<SupportPoint> simplex, ref Vector2 d, float margin)
     {
         if (simplex.Count == 2)
         {
-            Vector2 A = simplex[1];
-            Vector2 B = simplex[0];
+            Vector2 A = simplex[1].res;
+            Vector2 B = simplex[0].res;
 
             Vector2 AB = B - A;
             Vector2 AO = -A;
@@ -110,9 +133,9 @@ abstract public class CableMeshInterface : CableMeshGeneration
             return false;
         }
         {
-            Vector2 A = simplex[2];
-            Vector2 B = simplex[1];
-            Vector2 C = simplex[0];
+            Vector2 A = simplex[2].res;
+            Vector2 B = simplex[1].res;
+            Vector2 C = simplex[0].res;
 
             Vector2 AB = B - A;
             Vector2 AC = C - A;
@@ -136,32 +159,235 @@ abstract public class CableMeshInterface : CableMeshGeneration
         return true;
     }
 
-    static public cableIntersection GJKIntersection(CableMeshInterface s1, CableMeshInterface s2)
+    static public CablePinchManifold GJKIntersection(CableMeshInterface s1, CableMeshInterface s2, float cableMargin, float margin)
     {
-        cableIntersection result = new cableIntersection();
-
         Vector2 d = (s2.PulleyCentreGeometrical - s1.PulleyCentreGeometrical).normalized;
 
-        List<Vector2> simplex = new List<Vector2>();
+        List<SupportPoint> simplex = new List<SupportPoint>();
         simplex.Add(Support(s1, s2, d));
-        d = -simplex[0].normalized;
+        d = -simplex[0].res.normalized;
 
         while (true)
         {
-            Vector2 A = Support(s1, s2, d);
-            if (Vector2.Dot(A, d) < -margin)
+            SupportPoint A = Support(s1, s2, d);
+            if (Vector2.Dot(A.res, d) < -(cableMargin + margin))
             {
-                result.intersecting = false;
+                CablePinchManifold result = new CablePinchManifold();
+                result.hasContact = false;
                 return result;
             }
             
             simplex.Add(A);
-            if (HandleSimplex(ref simplex, ref d))
+            if (HandleSimplex(ref simplex, ref d, cableMargin + margin))
             {
-                result.intersecting = true;
-                return result;
+                return EPA(simplex, s1, s2, cableMargin, margin);
+            }
+        }
+    }
+
+    static private CablePinchManifold EPA(List<SupportPoint> polytope, CableMeshInterface s1, CableMeshInterface s2, float cableMargin, float margin)
+    {
+        int minIndex1 = 0;
+        int minIndex2 = 0;
+        float minDistance = Mathf.Infinity;
+        Vector2 minNormal = Vector2.zero;
+
+        int iteration = 0;
+
+        while ((minDistance == Mathf.Infinity) && (iteration < 64))
+        {
+            iteration++;
+            for (int i = 0; i < polytope.Count; i++)
+            {
+                int j = (i + 1) % polytope.Count;
+                int k = (j + 1) % polytope.Count;
+                Vector2 A = polytope[i].res;
+                Vector2 B = polytope[j].res;
+                Vector2 C = polytope[k].res;
+
+                Vector2 AB = B - A;
+                Vector2 AC = C - A;
+
+                Vector2 normal = new Vector2(AB.y, -AB.x).normalized;
+                if (Vector2.Dot(AC, normal) > 0.0f)
+                {
+                    normal *= -1;
+                }
+
+                float distance = Vector2.Dot(normal, A) + (cableMargin + margin);
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    minNormal = normal;
+                    minIndex1 = i;
+                    minIndex2 = j;
+                }
             }
 
+            SupportPoint support = Support(s1, s2, minNormal);
+            float sDistance = Vector2.Dot(minNormal, support.res) + (cableMargin + margin);
+            
+            if (Mathf.Abs(sDistance - minDistance) > 0.001f)
+            {
+                minDistance = Mathf.Infinity;
+                polytope.Insert(minIndex2, support);
+            }
         }
+        print(iteration);
+        CablePinchManifold result = new CablePinchManifold();
+        result.hasContact = true;
+        result.depth = minDistance;
+        result.normal = minNormal;
+        result.bodyA = s1;
+        result.bodyB = s2;
+        ContactPoints(polytope[minIndex1], polytope[minIndex2], ref result, cableMargin, margin);
+        return result;
+    }
+
+    // made by me!
+    static private void ContactPoints(SupportPoint p1, SupportPoint p2, ref CablePinchManifold manifold, float cableMargin, float margin)
+    {
+        if (manifold.bodyA.CableMeshPrimitiveType == CMPrimitives.Circle)
+        {
+            if (manifold.bodyB.CableMeshPrimitiveType == CMPrimitives.Circle)
+            {
+                CircleCircleContact(ref manifold);
+            }
+            else
+            {
+                manifold.contactCount = 1;
+                CirclePolygonContact(manifold.bodyA, manifold.normal, manifold.depth, cableMargin, margin, out manifold.contact1.A, out manifold.contact1.B);
+            }
+        }
+        else
+        {
+            if (manifold.bodyB.CableMeshPrimitiveType == CMPrimitives.Circle)
+            {
+                manifold.contactCount = 1;
+                CirclePolygonContact(manifold.bodyB, -manifold.normal, manifold.depth, cableMargin, margin, out manifold.contact1.B, out manifold.contact1.A);
+            }
+            else
+            {
+                PolygonPolygonContact(p1, p2, ref manifold);
+            }
+        }
+    }
+
+    static private void CircleCircleContact(ref CablePinchManifold manifold)
+    {
+        manifold.contactCount = 1;
+        manifold.contact1.A = manifold.bodyA.FurthestPoint(manifold.normal);
+        manifold.contact1.B = manifold.bodyB.FurthestPoint(-manifold.normal);
+    }
+
+    static private void CirclePolygonContact(CableMeshInterface circle, Vector2 contactNormal, float depth, float cableMargin, float margin, out Vector2 circleContact, out Vector2 polygonContact)
+    {
+        circleContact = circle.FurthestPoint(contactNormal);
+        polygonContact = circleContact - contactNormal * (depth - (cableMargin + margin));
+    }
+
+    static private void PolygonPolygonContact(SupportPoint sp1, SupportPoint sp2, ref CablePinchManifold manifold)
+    {
+        if (sp1.A == sp2.A)
+        {
+            manifold.contactCount = 1;
+            manifold.contact1.A = sp1.A;
+            manifold.contact1.B = sp1.A - manifold.normal * manifold.depth;
+        }
+        else if (sp1.B == sp2.B)
+        {
+            manifold.contactCount = 1;
+            manifold.contact1.B = sp1.B;
+            manifold.contact1.B = sp1.A - manifold.normal * manifold.depth;
+        }
+        else
+        {
+            Vector2 normPerp = new Vector2(manifold.normal.y, -manifold.normal.x);
+
+            float A1 = Vector2.Dot(sp1.A, normPerp);
+            float A2 = Vector2.Dot(sp2.A, normPerp);
+            float B1 = Vector2.Dot(sp1.B, normPerp);
+            float B2 = Vector2.Dot(sp2.B, normPerp);
+
+            if (A1 <= B1 ? A1 > B2 : A1 <= B2)
+            {
+                float d = DistanceToEdge(sp1.A, manifold.normal, sp1.B, sp2.B);
+                if (Mathf.Abs(d - manifold.depth) <= 0.001)
+                {
+                    manifold.contactCount++;
+                    manifold.contact1.A = sp1.A;
+                    manifold.contact1.B = sp1.A + manifold.normal * d;
+                }
+            }
+
+            if (A2 <= B1 ? A2 > B2 : A2 <= B2)
+            {
+                float d = DistanceToEdge(sp2.A, manifold.normal, sp1.B, sp2.B);
+                if (Mathf.Abs(d - manifold.depth) <= 0.001)
+                {
+                    manifold.contactCount++;
+                    if (manifold.contactCount == 1)
+                    {
+                        manifold.contact1.A = sp2.A;
+                        manifold.contact1.B = sp2.A + manifold.normal * d;
+                    }
+                    else
+                    {
+                        manifold.contact2.A = sp2.A;
+                        manifold.contact2.B = sp2.A + manifold.normal * d;
+                        return;
+                    }
+                }
+            }
+
+            if (B1 <= A1 ? B1 > A2 : B1 <= A2)
+            {
+                float d = DistanceToEdge(sp1.B, manifold.normal, sp1.A, sp2.A);
+                if (Mathf.Abs(d - manifold.depth) <= 0.001)
+                {
+                    manifold.contactCount++;
+                    if (manifold.contactCount == 1)
+                    {
+                        manifold.contact1.B = sp1.B;
+                        manifold.contact1.A = sp1.B + manifold.normal * d;
+                    }
+                    else
+                    {
+                        manifold.contact2.B = sp1.B;
+                        manifold.contact2.A = sp1.B + manifold.normal * d;
+                        return;
+                    }
+                }
+            }
+
+            if (B2 <= A1 ? B2 > A2 : B2 <= A2)
+            {
+                float d = DistanceToEdge(sp2.B, manifold.normal, sp1.A, sp2.A);
+                if (Mathf.Abs(d - manifold.depth) <= 0.001)
+                {
+                    manifold.contactCount++;
+                    if (manifold.contactCount == 1)
+                    {
+                        manifold.contact1.B = sp2.B;
+                        manifold.contact1.A = sp2.B + manifold.normal * d;
+                    }
+                    else
+                    {
+                        manifold.contact2.B = sp2.B;
+                        manifold.contact2.A = sp2.B + manifold.normal * d;
+                    }
+                }
+            }
+        }
+    }
+
+    static private float DistanceToEdge(Vector2 point, Vector2 normal, Vector2 edge1, Vector2 edge2)
+    {
+        Vector2 edgeVec = edge2 - edge1;
+        Vector2 pointVec = point - edge1;
+
+        Vector2 proj = (Vector2.Dot(pointVec, edgeVec) / edgeVec.sqrMagnitude) * edgeVec;
+        return Mathf.Abs(Vector2.Dot(proj, normal));
     }
 }

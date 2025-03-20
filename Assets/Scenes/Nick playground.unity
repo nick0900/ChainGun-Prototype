@@ -906,8 +906,7 @@ MonoBehaviour:
   colliders:
   - {fileID: 372062225}
   - {fileID: 2015910257}
-  - {fileID: 1854401378}
-  - {fileID: 1693734915}
+  manifolds: []
 --- !u!1001 &378521700
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3232,7 +3231,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 4
+  m_Constraints: 7
 --- !u!4 &1205590652
 Transform:
   m_ObjectHideFlags: 0
@@ -3925,7 +3924,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 4
+  m_Constraints: 7
 --- !u!4 &1435498565
 Transform:
   m_ObjectHideFlags: 0
@@ -5583,7 +5582,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2015910253}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 42.94, y: 3.52, z: 0}
+  m_LocalPosition: {x: 45.873, y: 2.16, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
