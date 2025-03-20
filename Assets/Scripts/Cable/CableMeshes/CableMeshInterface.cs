@@ -161,6 +161,9 @@ abstract public class CableMeshInterface : CableMeshGeneration
 
     static public CablePinchManifold GJKIntersection(CableMeshInterface s1, CableMeshInterface s2, float cableMargin, float margin)
     {
+        if ((s1.CableMeshPrimitiveType == CMPrimitives.Circle) && (s2.CableMeshPrimitiveType == CMPrimitives.Circle))
+            return CircleCircleIntersection((CirclePulley)s1, (CirclePulley)s2, cableMargin, margin);
+
         Vector2 d = (s2.PulleyCentreGeometrical - s1.PulleyCentreGeometrical).normalized;
 
         List<SupportPoint> simplex = new List<SupportPoint>();
@@ -250,35 +253,18 @@ abstract public class CableMeshInterface : CableMeshGeneration
     {
         if (manifold.bodyA.CableMeshPrimitiveType == CMPrimitives.Circle)
         {
-            if (manifold.bodyB.CableMeshPrimitiveType == CMPrimitives.Circle)
-            {
-                CircleCircleContact(ref manifold);
-            }
-            else
-            {
-                manifold.contactCount = 1;
-                CirclePolygonContact(manifold.bodyA, manifold.normal, manifold.depth, cableMargin, margin, out manifold.contact1.A, out manifold.contact1.B);
-            }
+            manifold.contactCount = 1;
+            CirclePolygonContact(manifold.bodyA, manifold.normal, manifold.depth, cableMargin, margin, out manifold.contact1.A, out manifold.contact1.B);
+        }
+        else if (manifold.bodyB.CableMeshPrimitiveType == CMPrimitives.Circle)
+        {
+            manifold.contactCount = 1;
+            CirclePolygonContact(manifold.bodyB, -manifold.normal, manifold.depth, cableMargin, margin, out manifold.contact1.B, out manifold.contact1.A);
         }
         else
         {
-            if (manifold.bodyB.CableMeshPrimitiveType == CMPrimitives.Circle)
-            {
-                manifold.contactCount = 1;
-                CirclePolygonContact(manifold.bodyB, -manifold.normal, manifold.depth, cableMargin, margin, out manifold.contact1.B, out manifold.contact1.A);
-            }
-            else
-            {
-                PolygonPolygonContact(p1, p2, ref manifold);
-            }
+            PolygonPolygonContact(p1, p2, ref manifold);
         }
-    }
-
-    static private void CircleCircleContact(ref CablePinchManifold manifold)
-    {
-        manifold.contactCount = 1;
-        manifold.contact1.A = manifold.bodyA.FurthestPoint(manifold.normal);
-        manifold.contact1.B = manifold.bodyB.FurthestPoint(-manifold.normal);
     }
 
     static private void CirclePolygonContact(CableMeshInterface circle, Vector2 contactNormal, float depth, float cableMargin, float margin, out Vector2 circleContact, out Vector2 polygonContact)
@@ -389,5 +375,32 @@ abstract public class CableMeshInterface : CableMeshGeneration
 
         Vector2 proj = (Vector2.Dot(pointVec, edgeVec) / edgeVec.sqrMagnitude) * edgeVec;
         return Mathf.Abs(Vector2.Dot(proj, normal));
+    }
+
+    static private CablePinchManifold CircleCircleIntersection(CirclePulley s1, CirclePulley s2, float cableMargin, float margin)
+    {
+        CablePinchManifold result = new CablePinchManifold();
+
+        Vector2 distanceVector = s2.PulleyCentreGeometrical - s1.PulleyCentreGeometrical;
+        float distance = distanceVector.magnitude;
+        float d = s1.Radius + s2.Radius + 2*(cableMargin + margin) - distance;
+
+        if (d <= 0.0f)
+        {
+            result.hasContact = false;
+            return result;
+        }
+
+        result.hasContact = true;
+        result.bodyA = s1;
+        result.bodyB = s2;
+        
+        result.depth = d;
+        result.normal = distanceVector / distance;
+
+        result.contactCount = 1;
+        result.contact1.A = s1.FurthestPoint(result.normal);
+        result.contact1.B = s2.FurthestPoint(-result.normal);
+        return result;
     }
 }
