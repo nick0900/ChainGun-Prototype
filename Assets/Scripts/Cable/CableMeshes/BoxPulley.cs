@@ -276,4 +276,83 @@ public class BoxPulley : CableMeshInterface
         }
         return point;
     }
+
+    public override int IndexFromPoint(Vector2 point)
+    {
+        point = ((Vector2)pulleyCollider.transform.InverseTransformPoint(point)) + pulleyCollider.offset;
+        float boxX = pulleyCollider.size.x / 2;
+        float boxY = pulleyCollider.size.y / 2;
+        
+        // Top Right
+        if (Mathf.Abs((point.x - boxX) + (point.y - boxY)) <= 0.0001)
+        {
+            return 0;
+        }
+
+        // Bot Right
+        if (Mathf.Abs((point.x - boxX) + (point.y + boxY)) <= 0.0001)
+        {
+            return 1;
+        }
+
+        // Bot Left
+        if (Mathf.Abs((point.x + boxX) + (point.y + boxY)) <= 0.0001)
+        {
+            return 2;
+        }
+
+        // Top Left
+        if (Mathf.Abs((point.x + boxX) + (point.y - boxY)) <= 0.0001)
+        {
+            return 3;
+        }
+
+        return -1;
+    }
+
+    public override Vector2 GetNextPoint(int i)
+    {
+        float boxX = pulleyCollider.size.x / 2;
+        float boxY = pulleyCollider.size.y / 2;
+
+        switch (i)
+        {
+            case 0:
+                // Bot Right
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(boxX, -boxY));
+            case 1:
+                // Bot left
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(-boxX, -boxY));
+            case 2:
+                // Top left
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(-boxX, boxY));
+            case 3:
+                // Top Right
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(boxX, boxY));
+        }
+        return Vector2.zero;
+    }
+
+    public override Vector2 GetPreviousPoint(int i)
+    {
+        float boxX = pulleyCollider.size.x / 2;
+        float boxY = pulleyCollider.size.y / 2;
+
+        switch (i)
+        {
+            case 0:
+                // Top Left
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(-boxX, boxY));
+            case 1:
+                // Top Right
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(boxX, boxY));
+            case 2:
+                // Bot Right
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(boxX, -boxY));
+            case 3:
+                // Bot Left
+                return pulleyCollider.transform.TransformPoint(pulleyCollider.offset + new Vector2(-boxX, -boxY));
+        }
+        return Vector2.zero;
+    }
 }

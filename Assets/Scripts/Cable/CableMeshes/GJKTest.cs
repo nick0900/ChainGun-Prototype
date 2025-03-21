@@ -30,10 +30,13 @@ public class GJKTest : MonoBehaviour
                 }
             }
         */
-        CablePinchManifold result = CableMeshInterface.GJKIntersection(colliders[0], colliders[1], 0.1f, 0.001f);
-        if (result.hasContact)
+        for (int i = 0; i < colliders.Count - 1; i++)
         {
-            manifolds.Add(result);
+            CablePinchManifold result = CableMeshInterface.GJKIntersection(colliders[i], colliders[i + 1], 0.1f, 0.001f);
+            if (result.hasContact)
+            {
+                manifolds.Add(result);
+            }
         }
     }
 
@@ -52,9 +55,9 @@ public class GJKTest : MonoBehaviour
 
                 if (manifold.contactCount == 2)
                 {
-                    Gizmos.color = Color.blue;
+                    Gizmos.color = Color.red;
                     Gizmos.DrawSphere(manifold.contact2.A, 0.05f);
-                    Gizmos.color = Color.cyan;
+                    Gizmos.color = Color.yellow;
                     Gizmos.DrawSphere(manifold.contact2.B, 0.05f);
                 }
 

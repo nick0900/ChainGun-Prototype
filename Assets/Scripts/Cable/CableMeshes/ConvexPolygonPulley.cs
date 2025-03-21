@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+//using System.Numerics;
 
 [System.Serializable]
 public class ConvexPolygonPulley : CableMeshInterface
@@ -408,5 +409,37 @@ public class ConvexPolygonPulley : CableMeshInterface
             }
         }
         return point;
+    }
+
+    public override int IndexFromPoint(Vector2 point)
+    {
+        point = ((Vector2)pulleyCollider.transform.InverseTransformPoint(point)) + pulleyCollider.offset;
+
+        for (int i = 0; i < pulleyCollider.points.Length; ++i)
+        {
+            if (Mathf.Abs((point.x - pulleyCollider.points[i].x) + (point.y - pulleyCollider.points[i].y)) <= 0.0001)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public override Vector2 GetNextPoint(int i)
+    {
+        if (i >= (pulleyCollider.points.Length - 1))
+        {
+            return pulleyCollider.points[0];
+        }
+        return pulleyCollider.points[i + 1];
+    }
+
+    public override Vector2 GetPreviousPoint(int i)
+    {
+        if (i <= 0)
+        {
+            return pulleyCollider.points[pulleyCollider.points.Length - 1];
+        }
+        return pulleyCollider.points[i - 1];
     }
 }

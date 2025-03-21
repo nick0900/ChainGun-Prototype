@@ -258,4 +258,19 @@ public class CirclePulley : CableMeshInterface
     {
         return WorldPosition + direction * Radius;
     }
+
+    public override int IndexFromPoint(Vector2 point)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override Vector2 GetNextPoint(int i)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override Vector2 GetPreviousPoint(int i)
+    {
+        throw new System.NotImplementedException();
+    }
 }

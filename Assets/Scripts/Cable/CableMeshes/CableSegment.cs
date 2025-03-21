@@ -38,6 +38,21 @@ public class CableSegment : CableMeshInterface
         return point2;
     }
 
+    public override Vector2 GetNextPoint(int i)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override Vector2 GetPreviousPoint(int i)
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public override int IndexFromPoint(Vector2 point)
+    {
+        throw new System.NotImplementedException();
+    }
+
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
         throw new System.NotImplementedException();
