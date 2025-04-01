@@ -52,6 +52,10 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public override float SafeStoredLength { get { return minSide; } }
 
+    public override Bounds PulleyBounds { get { return pulleyCollider.bounds; } }
+
+    public override Vector2 CenterOfMass { get { return PulleyAttachedRigidBody != null ? PulleyAttachedRigidBody.worldCenterOfMass : PulleyCentreGeometrical; } }
+
     protected override void SetupMesh()
     {
         pulleyCollider = GetComponent<PolygonCollider2D>();
@@ -302,7 +306,7 @@ public class ConvexPolygonPulley : CableMeshInterface
         return Vector2.SignedAngle(cableVector, centreVector) >= 0;
     }
 
-    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, out float identity)
+    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainHalfWidth, out float identity)
     {
         int highestIndex = 0;
         Vector2 highestVector = PulleyCentreGeometrical + pulleyCollider.points[highestIndex] - point;
@@ -323,10 +327,10 @@ public class ConvexPolygonPulley : CableMeshInterface
         identity = highestIndex;
 
 
-        return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) - PulleyCentreGeometrical + polygonData[highestIndex].cornerNormal * chainWidth / 2;
+        return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) - PulleyCentreGeometrical + polygonData[highestIndex].cornerNormal * chainHalfWidth;
     }
 
-    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth, bool useSmallest)
+    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableHalfWidth, bool useSmallest)
     {
         int prevVertex = (int)prevIdentity;
         int currVertex = (int)currIdentity;
@@ -385,12 +389,12 @@ public class ConvexPolygonPulley : CableMeshInterface
         return firstDistance;
     }
 
-    public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableWidth)
+    public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableHalfWidth)
     {
         int pointIndex = Random.Range(0, polygonData.Count - 1);
         pointIdentity = pointIndex;
 
-        return PulleyToWorldTransform(pulleyCollider.points[pointIndex]) - PulleyCentreGeometrical + polygonData[pointIndex].cornerNormal * cableWidth / 2;
+        return PulleyToWorldTransform(pulleyCollider.points[pointIndex]) - PulleyCentreGeometrical + polygonData[pointIndex].cornerNormal * cableHalfWidth;
     }
 
     public override Vector2 FurthestPoint(Vector2 direction)

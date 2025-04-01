@@ -29,6 +29,10 @@ public class CableSegment : CableMeshInterface
 
     public override bool Errornous => throw new System.NotImplementedException();
 
+    public override Bounds PulleyBounds => throw new System.NotImplementedException();
+
+    public override Vector2 CenterOfMass { get { return PulleyCentreGeometrical; } }
+
     public override Vector2 FurthestPoint(Vector2 direction)
     {
         Vector2 point1 = this.transform.position;

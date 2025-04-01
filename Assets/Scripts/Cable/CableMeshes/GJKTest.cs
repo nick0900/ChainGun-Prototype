@@ -32,11 +32,11 @@ public class GJKTest : MonoBehaviour
         */
         for (int i = 0; i < colliders.Count - 1; i++)
         {
-            CablePinchManifold result = CableMeshInterface.GJKIntersection(colliders[i], colliders[i + 1], 0.1f, 0.001f);
-            if (result.hasContact)
-            {
-                manifolds.Add(result);
-            }
+            //CablePinchManifold result = CableMeshInterface.GJKIntersection(colliders[i], colliders[i + 1], 0.1f, 0.001f);
+            //if (result.hasContact)
+            //{
+            //    manifolds.Add(result);
+            //}
         }
     }
 
