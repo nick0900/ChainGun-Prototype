@@ -54,6 +54,8 @@ public class CirclePulley : CableMeshInterface
 
     public override Vector2 CenterOfMass { get { return PulleyAttachedRigidBody != null ? PulleyAttachedRigidBody.worldCenterOfMass : PulleyCentreGeometrical; } }
 
+    public override float MaxExtent { get { return Radius; } }
+
     protected override void SetupMesh()
     {
         pulleyCollider = GetComponent<CircleCollider2D>();
@@ -116,7 +118,7 @@ public class CirclePulley : CableMeshInterface
 
         if (d.magnitude < r2 + cableHalfWidth)
         {
-            //print("previously fuck");
+            //pulley intersection
             d = (d / d.magnitude) * (r2 + cableHalfWidth);
         }
 
@@ -144,23 +146,6 @@ public class CirclePulley : CableMeshInterface
         bool sameOrientation = (orientation1 && orientation2) || !(orientation1 || orientation2);
 
         float r = sameOrientation ? r2 - r1 : r1 + r2 + cableHalfWidth * 2;
-
-        if (d.magnitude <= r)
-        {
-            //print("previously double fuck");
-            d = d.normalized;
-            tangentOffset1 = d * r1;
-            tangentOffset2 = -d * r2;
-
-            angle1 = -Vector2.SignedAngle(d, Vector2.left) - this.ColliderTransform.rotation.eulerAngles.z + 180.0f;
-            angle2 = -Vector2.SignedAngle(-d, Vector2.left) - pulley2.ColliderTransform.rotation.eulerAngles.z + 180.0f;
-
-            if (angle1 > 360.0f) angle1 -= 360.0f;
-            else if (angle1 < 0) angle1 += 360.0f;
-
-            if (angle2 > 360.0f) angle2 -= 360.0f;
-            else if (angle2 < 0) angle2 += 360.0f;
-        }
 
         if (sameOrientation)
         {
@@ -196,10 +181,29 @@ public class CirclePulley : CableMeshInterface
         }
         else
         {
-            Vector2 tangentIntersection = (P2 * (r1 + cableHalfWidth) + P1 * (r2 + cableHalfWidth)) / (r1 + r2 + cableHalfWidth * 2);
+            if (d.magnitude <= r)
+            {
+                //pulley intersection
+                d = d.normalized;
+                tangentOffset1 = d * r1;
+                tangentOffset2 = -d * r2;
 
-            TangentPointCircle(tangentIntersection, P1, r1, orientation1, out tangentOffset1, out angle1, cableHalfWidth);
-            TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2, out angle2, cableHalfWidth);
+                angle1 = -Vector2.SignedAngle(d, Vector2.left) - this.ColliderTransform.rotation.eulerAngles.z + 180.0f;
+                angle2 = -Vector2.SignedAngle(-d, Vector2.left) - pulley2.ColliderTransform.rotation.eulerAngles.z + 180.0f;
+
+                if (angle1 > 360.0f) angle1 -= 360.0f;
+                else if (angle1 < 0) angle1 += 360.0f;
+
+                if (angle2 > 360.0f) angle2 -= 360.0f;
+                else if (angle2 < 0) angle2 += 360.0f;
+            }
+            else
+            {
+                Vector2 tangentIntersection = (P2 * (r1 + cableHalfWidth) + P1 * (r2 + cableHalfWidth)) / (r1 + r2 + cableHalfWidth * 2);
+
+                TangentPointCircle(tangentIntersection, P1, r1, orientation1, out tangentOffset1, out angle1, cableHalfWidth);
+                TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2, out angle2, cableHalfWidth);
+            }
         }
     }
 

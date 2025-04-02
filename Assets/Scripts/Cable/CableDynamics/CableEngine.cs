@@ -53,16 +53,17 @@ public class CableEngine : MonoBehaviour
                 {
                     BodyAttachmentManifold bodyAttachment = new BodyAttachmentManifold();
                     bodyAttachment.body = joint.body;
+                    bodyAttachment.joints = new List<AttachedJoint>();
                     bodyAttachment.joints.Add(attachedJoint);
-                    bodyAttachment.greatestMargin = cable.CableHalfWidth;
+                    bodyAttachment.greatestMargin = cable.CableHalfWidth * 2;
                     AttachedBodies.Add(bodyAttachment);
                 }
                 else
                 {
                     BodyAttachmentManifold bodyAttachment = AttachedBodies[i];
                     bodyAttachment.joints.Add(attachedJoint);
-                    if (bodyAttachment.greatestMargin < cable.CableHalfWidth)
-                        bodyAttachment.greatestMargin = cable.CableHalfWidth;
+                    if (bodyAttachment.greatestMargin < cable.CableHalfWidth * 2)
+                        bodyAttachment.greatestMargin = cable.CableHalfWidth * 2;
                     AttachedBodies[i] = bodyAttachment;
                 }
             }
@@ -95,11 +96,21 @@ public class CableEngine : MonoBehaviour
     }
     private List<PotentialPinchManifold> Manifolds;
 
+    struct SegmentHit
+    {
+        public CableRoot cable;
+        public CableRoot.Joint joint;
+        public CableMeshInterface body;
+    }
+
+    private List<SegmentHit> SegmentHits;
+
     public bool DebugRenderContacts = false;
     void Start()
     {
         NearContacts = new List<NearContact>();
         Manifolds = new List<PotentialPinchManifold>();
+        SegmentHits = new List<SegmentHit>();
     }
 
     void FixedUpdate()
@@ -113,7 +124,33 @@ public class CableEngine : MonoBehaviour
         PinchNarrowPhase(in NearContacts, ref Manifolds);
         ConfirmPinchContacts(ref Manifolds);
 
+        SegmentHits.Clear();
+        SegmentBroadPhase(in Bodies, in Cables, ref SegmentHits);
+        SegmentNarrowPhase(ref SegmentHits);
+    }
 
+    static void UpdateCables(in List<CableRoot> cables)
+    {
+        foreach (CableRoot cable in cables)
+        {
+            CableRoot.Joint joint;
+            for (int i = 1; i < cable.Joints.Count - 1; i++)
+            {
+                joint = cable.Joints[i];
+                CableRoot.Joint jointTail = cable.Joints[i - 1];
+                CableRoot.Joint jointHead = cable.Joints[i + 1];
+
+                CableRoot.UpdatePulley(ref joint, ref jointTail, ref jointHead, cable.CableHalfWidth);
+                CableRoot.InitializeSegment(ref joint, jointTail);
+
+                cable.Joints[i] = joint;
+                cable.Joints[i - 1] = jointTail;
+                cable.Joints[i + 1] = jointHead;
+            }
+            joint = cable.Joints[cable.Joints.Count - 1];
+            CableRoot.InitializeSegment(ref joint, cable.Joints[cable.Joints.Count - 2]);
+            cable.Joints[cable.Joints.Count - 1] = joint;
+        }
     }
 
     static void PinchBroadPhase(in List<BodyAttachmentManifold> attachedBodies, in List<BodyAttachmentManifold> freeBodies, ref List<NearContact> nearContacts)
@@ -121,6 +158,7 @@ public class CableEngine : MonoBehaviour
         for (int i = 0; i < attachedBodies.Count; i++)
         {
             CableMeshInterface b1 = attachedBodies[i].body;
+            if (b1.CableMeshPrimitiveType == CMPrimitives.Point) continue;
             bool isStatic1 = (b1.PulleyAttachedRigidBody == null) || (b1.PulleyAttachedRigidBody.isKinematic);
             Bounds aabb1 = b1.PulleyBounds;
             float margin1 = attachedBodies[i].greatestMargin;
@@ -128,11 +166,12 @@ public class CableEngine : MonoBehaviour
             for (int j = i + 1; j < attachedBodies.Count; j++)
             {
                 CableMeshInterface b2 = attachedBodies[j].body;
+                if (b2.CableMeshPrimitiveType == CMPrimitives.Point) continue;
                 bool isStatic2 = (b2.PulleyAttachedRigidBody == null) || (b2.PulleyAttachedRigidBody.isKinematic);
                 Bounds aabb2 = b2.PulleyBounds;
                 float margin = Mathf.Max(margin1, attachedBodies[j].greatestMargin);
 
-                if (isStatic1 && isStatic2) continue;
+                //if (isStatic1 && isStatic2) continue;
 
                 if (CableMeshInterface.AABBMarginCheck(aabb1, aabb2, margin))
                 {
@@ -185,28 +224,38 @@ public class CableEngine : MonoBehaviour
 
     }
 
-    static void UpdateCables(in List<CableRoot> cables)
+    static void SegmentBroadPhase(in List<CableMeshInterface> bodies, in List<CableRoot> cables, ref List<SegmentHit> hits)
     {
-        foreach  (CableRoot cable in cables)
+        foreach(CableRoot cable in cables)
         {
-            CableRoot.Joint joint;
-            for (int i = 1; i < cable.Joints.Count - 1; i++)
+            for (int i = 1; i < cable.Joints.Count; i++)
             {
-                joint = cable.Joints[i];
+                CableRoot.Joint joint = cable.Joints[i];
                 CableRoot.Joint jointTail = cable.Joints[i - 1];
-                CableRoot.Joint jointHead = cable.Joints[i + 1];
+                foreach (CableMeshInterface body in bodies)
+                {
+                    if (body.CableMeshPrimitiveType == CMPrimitives.Point) continue;
+                    if ((joint.body == body) || (jointTail.body == body)) continue;
 
-                CableRoot.UpdatePulley(ref joint, ref jointTail, ref jointHead, cable.CableHalfWidth);
-                CableRoot.InitializeSegment(ref joint, jointTail);
+                    Vector2 lineNormal = new Vector2(joint.cableUnitVector.y, -joint.cableUnitVector.x);
 
-                cable.Joints[i] = joint;
-                cable.Joints[i - 1] = jointTail;
-                cable.Joints[i + 1] = jointHead;
+                    float d = Mathf.Abs(Vector2.Dot(body.PulleyCentreGeometrical - joint.tangentPointTail, lineNormal));
+                    if (d <= body.MaxExtent + cable.CableHalfWidth)
+                    {
+                        SegmentHit hit = new SegmentHit();
+                        hit.cable = cable;
+                        hit.joint = joint;
+                        hit.body = body;
+                        hits.Add(hit);
+                    }
+                }
             }
-            joint = cable.Joints[cable.Joints.Count - 1];
-            CableRoot.InitializeSegment(ref joint, cable.Joints[cable.Joints.Count - 2]);
-            cable.Joints[cable.Joints.Count - 1] = joint;
         }
+    }
+
+    static void SegmentNarrowPhase(ref List<SegmentHit> hits)
+    {
+
     }
 
     private void OnDrawGizmos()

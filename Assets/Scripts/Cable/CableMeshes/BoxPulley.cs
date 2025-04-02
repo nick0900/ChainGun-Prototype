@@ -43,6 +43,9 @@ public class BoxPulley : CableMeshInterface
         return pulleyCollider.transform.TransformPoint(point + pulleyCollider.offset);
     }
 
+    float CalculatedMaxExtent = 0.0f;
+    public override float MaxExtent { get { return CalculatedMaxExtent; } }
+
     protected override void SetupMesh()
     {
         pulleyCollider = GetComponent<BoxCollider2D>();
@@ -57,6 +60,8 @@ public class BoxPulley : CableMeshInterface
                 minSide = pulleyCollider.size.y;
             }
         }
+
+        CalculatedMaxExtent = (pulleyCollider.size * 0.5f).magnitude;
     }
 
     protected override void RemoveCableMesh()

@@ -28,6 +28,8 @@ abstract public class CableMeshInterface : CableMeshGeneration
     //AABB of pulley
     public abstract Bounds PulleyBounds { get; }
 
+    public abstract float MaxExtent { get; }
+
     public abstract Vector2 CenterOfMass { get; }
 
     //transformation from a local point on the pulley to world space

@@ -56,6 +56,9 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public override Vector2 CenterOfMass { get { return PulleyAttachedRigidBody != null ? PulleyAttachedRigidBody.worldCenterOfMass : PulleyCentreGeometrical; } }
 
+    float CalculatedMaxExtent = 0.0f;
+    public override float MaxExtent { get { return CalculatedMaxExtent; } }
+
     protected override void SetupMesh()
     {
         pulleyCollider = GetComponent<PolygonCollider2D>();
@@ -63,6 +66,16 @@ public class ConvexPolygonPulley : CableMeshInterface
         if (pulleyCollider == null) return;
 
         UpdatePolygonData();
+
+        CalculatedMaxExtent = pulleyCollider.points[0].magnitude;
+        for (int i = 1; i < pulleyCollider.points.Length; i++)
+        {
+            float extent = pulleyCollider.points[i].magnitude;
+            if (extent > CalculatedMaxExtent)
+            {
+                CalculatedMaxExtent = extent;
+            }
+        }
     }
 
     protected override void RemoveCableMesh()

@@ -27,8 +27,8 @@ public class CableRoot : MonoBehaviour
         [HideInInspector] public float tIdentityHeadPrev;
         public Vector2 tangentOffsetHead;
         public Vector2 tangentOffsetTail;
-        public Vector2 tangentPointHead;
-        public Vector2 tangentPointTail;
+        [HideInInspector] public Vector2 tangentPointHead;
+        [HideInInspector] public Vector2 tangentPointTail;
 
         [HideInInspector] public float totalLambda = 0;
         [HideInInspector] public float inverseEffectiveMassDenominator = 0;
@@ -41,7 +41,7 @@ public class CableRoot : MonoBehaviour
 
         [HideInInspector] public Vector2 cableUnitVector = Vector2.zero;
 
-        [HideInInspector] public bool orientation = false;
+        public bool orientation = false;
 
         [HideInInspector] public bool slipping = false;
         [HideInInspector] public float frictionFactor = 1.0f;
@@ -60,7 +60,9 @@ public class CableRoot : MonoBehaviour
 
         if (jointTail.linkType != LinkType.Rolling)
         {
-            joint.tangentOffsetTail = joint.body.PointToShapeTangent(jointTail.body.transform.TransformPoint(jointTail.tangentOffsetHead), joint.orientation, cableHalfWidth, out joint.tIdentityTail);
+            jointTail.tangentPointHead = jointTail.body.transform.TransformPoint(jointTail.tangentOffsetHead);
+            jointTail.tangentPointTail = jointTail.tangentPointHead;
+            joint.tangentOffsetTail = joint.body.PointToShapeTangent(jointTail.tangentPointHead, joint.orientation, cableHalfWidth, out joint.tIdentityTail);
         }
         if (jointHead.linkType == LinkType.Rolling)
         {
@@ -68,7 +70,9 @@ public class CableRoot : MonoBehaviour
         }
         else
         {
-            joint.tangentOffsetHead = joint.body.PointToShapeTangent(jointHead.body.transform.TransformPoint(jointHead.tangentOffsetTail), !joint.orientation, cableHalfWidth, out joint.tIdentityHead);
+            jointHead.tangentPointTail = jointHead.body.transform.TransformPoint(jointHead.tangentOffsetTail);
+            jointHead.tangentPointHead = jointHead.tangentPointTail;
+            joint.tangentOffsetHead = joint.body.PointToShapeTangent(jointHead.tangentPointTail, !joint.orientation, cableHalfWidth, out joint.tIdentityHead);
         }
 
         float distTail = joint.body.ShapeSurfaceDistance(joint.tIdentityTailPrev, joint.tIdentityTail, joint.orientation, cableHalfWidth, true);
