@@ -114,16 +114,18 @@ public class CableRoot : MonoBehaviour
     }
 
 
-
-    // Start is called before the first frame update
-    void Start()
+    static public void AddJoint(in CableRoot root, in Joint segment, in CableMeshInterface body)
     {
-        
+
     }
 
-    // Update is called once per frame
-    void Update()
+    static public bool RemoveCondition(in Joint joint)
     {
-        
+
+    }
+
+    static public void RemoveJoint(in CableRoot root, in Joint joint)
+    {
+
     }
 }

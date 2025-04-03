@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Net.Mail;
+using Unity.Burst.CompilerServices;
 using UnityEngine;
 using static CableMeshInterface;
 using static CableRoot;
@@ -20,8 +22,8 @@ public class CableEngine : MonoBehaviour
         public float greatestMargin;
         public List<AttachedJoint> joints;
     }
-    private List<BodyAttachmentManifold> AttachedBodies;
-    private List<BodyAttachmentManifold> FreeBodies;
+    [SerializeField] private List<BodyAttachmentManifold> AttachedBodies;
+    [SerializeField] private List<BodyAttachmentManifold> FreeBodies;
 
     private void OnEnable()
     {
@@ -120,13 +122,13 @@ public class CableEngine : MonoBehaviour
         NearContacts.Clear();
         Manifolds.Clear();
 
-        //PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
-        //PinchNarrowPhase(in NearContacts, ref Manifolds);
-        //ConfirmPinchContacts(ref Manifolds);
+        PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
+        PinchNarrowPhase(in NearContacts, ref Manifolds);
+        ConfirmPinchContacts(ref Manifolds);
 
         SegmentHits.Clear();
         SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
-        print("Segment hits: " + SegmentHits.Count);
+        SpliceJoints(ref Cables, in SegmentHits, ref AttachedBodies, ref FreeBodies);
 
     }
 
@@ -259,7 +261,6 @@ public class CableEngine : MonoBehaviour
                         if (!CableMeshInterface.GJKCableSegmentIntersection(cable, joint, jointTail, body)) continue;
                     }
 
-                    print("broad 3");
                     SegmentHit hit = new SegmentHit();
                     hit.cable = cable;
                     hit.joint = joint;
@@ -267,6 +268,85 @@ public class CableEngine : MonoBehaviour
                     hits.Add(hit);
                     // only one intersection per cable segment will be processed per fixed frame
                     break;
+                }
+            }
+        }
+    }
+
+    static void SpliceJoints(ref List<CableRoot> cables, in List<SegmentHit> segmentHits, ref List<BodyAttachmentManifold> attachedBodies, ref List<BodyAttachmentManifold> freeBodies)
+    {
+        // Create new Joints
+        foreach (SegmentHit hit in segmentHits)
+        {
+            int i = attachedBodies.FindIndex(x => x.body == hit.body);
+            if (i != -1)
+            {
+                BodyAttachmentManifold attachement = attachedBodies[i];
+
+                AttachedJoint attachedJoint = new AttachedJoint();
+                attachedJoint.joint = hit.joint;
+                attachedJoint.root = hit.cable;
+                attachement.joints.Add(attachedJoint);
+
+                if (attachement.greatestMargin < hit.cable.CableHalfWidth * 2)
+                {
+                    attachement.greatestMargin = hit.cable.CableHalfWidth * 2;
+                }
+
+                attachedBodies[i] = attachement;
+            }
+            else
+            {
+                freeBodies.RemoveAt(freeBodies.FindIndex(x => x.body == hit.body));
+
+                BodyAttachmentManifold attachement = new BodyAttachmentManifold();
+
+                attachement.body = hit.body;
+                attachement.joints = new List<AttachedJoint>();
+                AttachedJoint attachedJoint = new AttachedJoint();
+                attachedJoint.joint = hit.joint;
+                attachedJoint.root = hit.cable;
+                attachement.joints.Add(attachedJoint);
+                attachement.greatestMargin = hit.cable.CableHalfWidth * 2;
+
+                attachedBodies.Add(attachement);
+            }
+            CableRoot.AddJoint(in hit.cable, in  hit.joint, in hit.body);
+        }
+
+        // Remove Joints
+        foreach (CableRoot cable in cables)
+        {
+            foreach (CableRoot.Joint joint in cable.Joints)
+            {
+                if (CableRoot.RemoveCondition(in joint))
+                {
+                    int i = attachedBodies.FindIndex(x => x.body == joint.body);
+                    BodyAttachmentManifold attachment = attachedBodies[i];
+                    if (attachment.joints.Count > 1)
+                    {
+                        attachment.joints.RemoveAt(attachment.joints.FindIndex(x => x.joint == joint));
+                        if (attachment.greatestMargin <= cable.CableHalfWidth * 2)
+                        {
+                            attachment.greatestMargin = attachment.joints[0].root.CableHalfWidth * 2;
+                            for (int j = 1; j < attachment.joints.Count; j++)
+                            {
+                                if (attachment.greatestMargin < attachment.joints[j].root.CableHalfWidth*2)
+                                {
+                                    attachment.greatestMargin = attachment.joints[j].root.CableHalfWidth * 2;
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        attachedBodies.RemoveAt(i);
+                        BodyAttachmentManifold bodyAttachment = new BodyAttachmentManifold();
+                        bodyAttachment.body = joint.body;
+                        freeBodies.Add(bodyAttachment);
+                    }
+
+                    CableRoot.RemoveJoint(in cable, in joint);
                 }
             }
         }
