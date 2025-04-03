@@ -298,7 +298,7 @@ abstract public class CableMeshInterface : CableMeshGeneration
                 polytope.Insert(minIndex2, support);
             }
         }
-        print(iteration);
+        //print(iteration);
         CablePinchManifold result = new CablePinchManifold();
         if (minDistance <= -margin)
         {
@@ -517,5 +517,129 @@ abstract public class CableMeshInterface : CableMeshGeneration
         return true;
     }
 
-    
+    static Vector2 CableSegmentFurthestPoint(CableRoot.Joint joint, CableRoot.Joint jointTail, Vector2 d)
+    {
+        float l = Vector2.Dot(joint.cableUnitVector, d);
+        if (l < 0.0f)
+        {
+            return jointTail.tangentPointHead;
+        }
+        else
+        {
+            return joint.tangentPointTail;
+        }
+    }
+    static SupportPoint CableSegmentSupport(CableRoot.Joint joint, CableRoot.Joint jointTail, CableMeshInterface body, Vector2 d)
+    {
+        SupportPoint support = new SupportPoint();
+        support.A = CableSegmentFurthestPoint(joint, jointTail, d);
+        support.B = body.FurthestPoint(-d);
+        support.res = support.A - support.B;
+        return support;
+    }
+    static public bool GJKCableSegmentIntersection(CableRoot cable, CableRoot.Joint joint, CableRoot.Joint jointTail, CableMeshInterface body)
+    {
+        Vector2 d = joint.cableUnitVector;
+
+        List<SupportPoint> simplex = new List<SupportPoint>();
+        simplex.Add(CableSegmentSupport(joint, jointTail, body, d));
+        d = -simplex[0].res.normalized;
+
+        while (true)
+        {
+            SupportPoint A = CableSegmentSupport(joint, jointTail, body, d);
+            if (Vector2.Dot(A.res, d) < -cable.CableHalfWidth)
+            {
+                return false;
+            }
+
+            simplex.Add(A);
+            if (HandleSimplex(ref simplex, ref d, cable.CableHalfWidth))
+            {
+                return CableSegmentEPA(simplex, cable, joint, jointTail, body);
+            }
+        }
+    }
+
+    static bool CableSegmentEPA(List<SupportPoint> polytope, CableRoot cable, CableRoot.Joint joint, CableRoot.Joint jointTail, CableMeshInterface body)
+    {
+        int minIndex1 = 0;
+        int minIndex2 = 0;
+        float minDistance = Mathf.Infinity;
+        Vector2 minNormal = Vector2.zero;
+
+        int iteration = 0;
+
+        while ((minDistance == Mathf.Infinity) && (iteration < 64))
+        {
+            iteration++;
+            for (int i = 0; i < polytope.Count; i++)
+            {
+                int j = (i + 1) % polytope.Count;
+                int k = (j + 1) % polytope.Count;
+                Vector2 A = polytope[i].res;
+                Vector2 B = polytope[j].res;
+                Vector2 C = polytope[k].res;
+
+                Vector2 AB = B - A;
+                Vector2 AC = C - A;
+                Vector2 normal;
+
+                if (AB == Vector2.zero)
+                {
+                    // needed for corner corner distance of polygons
+                    normal = (polytope[i].B - polytope[i].A).normalized;
+                }
+                else
+                {
+                    normal = new Vector2(AB.y, -AB.x).normalized;
+                    if (Vector2.Dot(AC, normal) > 0.0f)
+                    {
+                        normal *= -1;
+                    }
+                }
+
+                float distance = Vector2.Dot(normal, A);
+
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    minNormal = normal;
+                    minIndex1 = i;
+                    minIndex2 = j;
+                }
+            }
+
+            SupportPoint support = CableSegmentSupport(joint, jointTail, body, minNormal);
+            float sDistance = Vector2.Dot(minNormal, support.res);
+
+            if (Mathf.Abs(sDistance - minDistance) > 0.001f)
+            {
+                minDistance = Mathf.Infinity;
+                polytope.Insert(minIndex2, support);
+            }
+        }
+
+        if (minDistance <= -cable.CableHalfWidth)
+        {
+            return false;
+        }
+
+        if (polytope[minIndex1].B == polytope[minIndex2].B)
+        {
+            Vector2 v1 = polytope[minIndex1].B - jointTail.tangentPointHead;
+            float d1 = Vector2.Dot(v1, joint.cableUnitVector);
+            if ((d1 < 0.0f) || (d1 > joint.currentLength)) return false;
+        }
+        else
+        {
+            Vector2 v1 = polytope[minIndex1].B - jointTail.tangentPointHead;
+            Vector2 v2 = polytope[minIndex2].B - jointTail.tangentPointHead;
+            float d1 = Vector2.Dot(v1, joint.cableUnitVector);
+            float d2 = Vector2.Dot(v2, joint.cableUnitVector);
+            if (((d1 < 0.0f) && (d2 < 0.0f)) || ((d1 > joint.currentLength) && (d2 > joint.currentLength))) return false;
+        }
+
+        return true;
+    }
 }

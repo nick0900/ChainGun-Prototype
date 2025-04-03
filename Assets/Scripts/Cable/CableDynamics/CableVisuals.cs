@@ -21,8 +21,8 @@ public class CableVisuals : MonoBehaviour
 
     private void Update()
     {
-        lineRenderer.startWidth = cableRoot.CableHalfWidth;
-        lineRenderer.endWidth = cableRoot.CableHalfWidth;
+        lineRenderer.startWidth = cableRoot.CableHalfWidth * 2;
+        lineRenderer.endWidth = cableRoot.CableHalfWidth * 2;
         lineRenderer.positionCount = 0;
         foreach (CableRoot.Joint joint in cableRoot.Joints)
         {

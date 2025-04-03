@@ -99,7 +99,7 @@ public class CableRoot : MonoBehaviour
 
     static public void InitializeSegment(ref Joint joint, in Joint jointTail)
     {
-        Vector3 distVector = jointTail.tangentPointHead - joint.tangentPointTail;
+        Vector3 distVector = joint.tangentPointTail - jointTail.tangentPointHead;
         joint.currentLength = distVector.magnitude;
         joint.cableUnitVector = distVector.normalized;
 

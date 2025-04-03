@@ -7,6 +7,7 @@ public class BoxPulley : CableMeshInterface
 {
     [HideInInspector][SerializeField] BoxCollider2D pulleyCollider = null;
     [HideInInspector][SerializeField] float minSide = 0;
+    [HideInInspector][SerializeField] float CalculatedMaxExtent = 0.0f;
 
     public override CMPrimitives CableMeshPrimitiveType { get { return CMPrimitives.Box; } }
 
@@ -43,7 +44,6 @@ public class BoxPulley : CableMeshInterface
         return pulleyCollider.transform.TransformPoint(point + pulleyCollider.offset);
     }
 
-    float CalculatedMaxExtent = 0.0f;
     public override float MaxExtent { get { return CalculatedMaxExtent; } }
 
     protected override void SetupMesh()

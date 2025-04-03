@@ -21,6 +21,8 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     [HideInInspector][SerializeField] float minSide = 0;
 
+    [HideInInspector][SerializeField] float CalculatedMaxExtent = 0.0f;
+
     public override CMPrimitives CableMeshPrimitiveType { get { return CMPrimitives.polygon; } }
 
     public override Vector2 PulleyCentreGeometrical
@@ -56,7 +58,6 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public override Vector2 CenterOfMass { get { return PulleyAttachedRigidBody != null ? PulleyAttachedRigidBody.worldCenterOfMass : PulleyCentreGeometrical; } }
 
-    float CalculatedMaxExtent = 0.0f;
     public override float MaxExtent { get { return CalculatedMaxExtent; } }
 
     protected override void SetupMesh()

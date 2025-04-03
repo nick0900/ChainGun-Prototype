@@ -120,13 +120,14 @@ public class CableEngine : MonoBehaviour
         NearContacts.Clear();
         Manifolds.Clear();
 
-        PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
-        PinchNarrowPhase(in NearContacts, ref Manifolds);
-        ConfirmPinchContacts(ref Manifolds);
+        //PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
+        //PinchNarrowPhase(in NearContacts, ref Manifolds);
+        //ConfirmPinchContacts(ref Manifolds);
 
         SegmentHits.Clear();
-        SegmentBroadPhase(in Bodies, in Cables, ref SegmentHits);
-        SegmentNarrowPhase(ref SegmentHits);
+        SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
+        print("Segment hits: " + SegmentHits.Count);
+
     }
 
     static void UpdateCables(in List<CableRoot> cables)
@@ -224,7 +225,7 @@ public class CableEngine : MonoBehaviour
 
     }
 
-    static void SegmentBroadPhase(in List<CableMeshInterface> bodies, in List<CableRoot> cables, ref List<SegmentHit> hits)
+    static void SegmentsIntersections(in List<CableMeshInterface> bodies, in List<CableRoot> cables, ref List<SegmentHit> hits)
     {
         foreach(CableRoot cable in cables)
         {
@@ -239,23 +240,36 @@ public class CableEngine : MonoBehaviour
 
                     Vector2 lineNormal = new Vector2(joint.cableUnitVector.y, -joint.cableUnitVector.x);
 
-                    float d = Mathf.Abs(Vector2.Dot(body.PulleyCentreGeometrical - joint.tangentPointTail, lineNormal));
-                    if (d <= body.MaxExtent + cable.CableHalfWidth)
+                    Vector2 bodyVector = body.PulleyCentreGeometrical - jointTail.tangentPointHead;
+
+                    // Check if the body might overlapp the segment line
+                    float d = Mathf.Abs(Vector2.Dot(bodyVector, lineNormal));
+                    if (d > body.MaxExtent + cable.CableHalfWidth) continue;
+
+                    // Check that the body is within the segment limits
+                    d = Vector2.Dot(bodyVector, joint.cableUnitVector);
+                    if (body.CableMeshPrimitiveType == CMPrimitives.Circle)
                     {
-                        SegmentHit hit = new SegmentHit();
-                        hit.cable = cable;
-                        hit.joint = joint;
-                        hit.body = body;
-                        hits.Add(hit);
+                        if ((d < 0.0f) || (d > joint.currentLength)) continue;
                     }
+                    else
+                    {
+                        float limitMargin = body.MaxExtent + cable.CableHalfWidth;
+                        if ((d < -limitMargin) || (d > joint.currentLength + limitMargin)) continue;
+                        if (!CableMeshInterface.GJKCableSegmentIntersection(cable, joint, jointTail, body)) continue;
+                    }
+
+                    print("broad 3");
+                    SegmentHit hit = new SegmentHit();
+                    hit.cable = cable;
+                    hit.joint = joint;
+                    hit.body = body;
+                    hits.Add(hit);
+                    // only one intersection per cable segment will be processed per fixed frame
+                    break;
                 }
             }
         }
-    }
-
-    static void SegmentNarrowPhase(ref List<SegmentHit> hits)
-    {
-
     }
 
     private void OnDrawGizmos()
