@@ -11,11 +11,13 @@ public class CableEngine : MonoBehaviour
     public List<CableMeshInterface> Bodies;
     public List<CableRoot> Cables;
 
+    [System.Serializable]
     private struct AttachedJoint
     {
         public CableRoot.Joint joint;
         public CableRoot root;
     }
+    [System.Serializable]
     private struct BodyAttachmentManifold
     {
         public CableMeshInterface body;
@@ -311,7 +313,7 @@ public class CableEngine : MonoBehaviour
 
                 attachedBodies.Add(attachement);
             }
-            CableRoot.AddJoint(in hit.cable, in  hit.joint, in hit.body);
+            CableRoot.AddJoint(hit.cable, hit.joint, hit.body);
         }
 
         // Remove Joints
