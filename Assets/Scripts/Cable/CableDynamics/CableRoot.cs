@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static CableRoot;
 
 public class CableRoot : MonoBehaviour
 {
@@ -121,54 +122,51 @@ public class CableRoot : MonoBehaviour
 
         jointNew.linkType = LinkType.Rolling;
         jointNew.body = body;
+        jointNew.orientation = body.Orientation(jointTail.tangentPointHead, jointHead.tangentPointTail);
 
-        /*
-        newNode = null;
+        // Recalculate all relevant tangents
+        float initialRestLength = jointHead.restLength;
 
-        if ((hitPulley == null) || !hitPulley.MeshGenerated) return false;
-        if ((this.linkType == LinkType.Rolling) && (hitPulley == this.pulley)) return false;
-        if ((this.tail != null) && (this.tail.linkType == LinkType.Rolling) && (this.tail.node.pulley == hitPulley)) return false;
-
-        newNode = ((GameObject)Instantiate(nodePrefab, hitPulley.PulleyCentreGeometrical, Quaternion.identity, hitPulley.transform)).GetComponent<CableJoint>();
-
-        newNode.pulley = hitPulley;
-
-        newNode.orientation = newNode.pulley.Orientation(CableStartPosition, CableEndPosition);
-
-        newNode.anchor = this.anchor;
-
-        newNode.name = this.name + (++kin).ToString();
-
-        newNode.linkType = LinkType.Rolling; 
-        */
-
-        /*
-        float tailIdentity = 0.0f;
-        Vector2 tailOffset = Vector2.zero;
-        if (newNode.tail.linkType == LinkType.Rolling)
+        if (jointTail.linkType == LinkType.Rolling)
         {
-            tailIdentity = newNode.tail.node.tangentIdentityHead;
-            tailOffset = newNode.tail.tangentOffsetHead;
-            TangentAlgorithm(newNode.pulley, newNode.tail.node.pulley, out newNode.tangentOffsetTail, out tailOffset, out newNode.tangentIdentityTail, out tailIdentity, newNode.orientation, newNode.tail.node.orientation);
+            CableMeshInterface.TangentAlgorithm(jointNew.body, jointTail.body, out jointNew.tangentOffsetTail, out jointTail.tangentOffsetHead, out jointNew.tIdentityTail, out jointTail.tIdentityHead, jointNew.orientation, jointTail.orientation, root.CableHalfWidth);
+            float dist = jointTail.body.ShapeSurfaceDistance(jointTail.tIdentityHeadPrev, jointTail.tIdentityHead, jointTail.orientation, root.CableHalfWidth, true);
+
+            jointTail.storedLength += dist;
+            initialRestLength -= dist;
+
+            Vector2 geometricalCenter = jointTail.body.PulleyCentreGeometrical;
+            jointTail.tangentPointHead = geometricalCenter + jointTail.tangentOffsetHead;
+            Vector2 COMOffset = geometricalCenter - jointTail.body.CenterOfMass;
+            jointTail.tangentOffsetHead += COMOffset;
+
+            jointTail.tIdentityHeadPrev = jointTail.tIdentityHead;
         }
         else
         {
-            newNode.tangentOffsetTail = newNode.pulley.PointToShapeTangent(newNode.tail.NodePosition, newNode.orientation, newNode.CableWidth, out newNode.tangentIdentityTail);
+            jointNew.tangentOffsetTail = jointNew.body.PointToShapeTangent(jointTail.tangentPointHead, jointNew.orientation, root.CableHalfWidth, out jointNew.tIdentityTail);
         }
 
-        float headIdentity = 0.0f;
-        Vector2 headOffset = Vector2.zero;
-        if (this.linkType == LinkType.Rolling)
+        if (jointHead.linkType == LinkType.Rolling)
         {
-            headIdentity = this.tangentIdentityTail;
-            headOffset = this.tangentOffsetTail;
-            TangentAlgorithm(this.pulley, newNode.pulley, out headOffset, out newNode.tangentOffsetHead, out headIdentity, out newNode.tangentIdentityHead, this.orientation, newNode.orientation);
+            CableMeshInterface.TangentAlgorithm(jointHead.body, jointNew.body, out jointHead.tangentOffsetTail, out jointNew.tangentOffsetHead, out jointHead.tIdentityTail, out jointNew.tIdentityHead, jointHead.orientation, jointNew.orientation, root.CableHalfWidth);
+            float dist = jointHead.body.ShapeSurfaceDistance(jointHead.tIdentityTailPrev, jointHead.tIdentityTail, jointHead.orientation, root.CableHalfWidth, true);
+
+            jointHead.storedLength -= dist;
+            initialRestLength += dist;
+
+            Vector2 geometricalCenter = jointHead.body.PulleyCentreGeometrical;
+            jointHead.tangentPointTail = geometricalCenter + jointHead.tangentOffsetTail;
+            Vector2 COMOffset = geometricalCenter - jointHead.body.CenterOfMass;
+            jointHead.tangentOffsetTail += COMOffset;
+
+            jointHead.tIdentityTailPrev = jointHead.tIdentityTail;
         }
         else
         {
-            newNode.tangentOffsetHead = newNode.pulley.PointToShapeTangent(this.NodePosition, !newNode.orientation, newNode.CableWidth, out newNode.tangentIdentityHead);
+            jointNew.tangentOffsetHead = jointNew.body.PointToShapeTangent(jointHead.tangentPointTail, !jointNew.orientation, root.CableHalfWidth, out jointNew.tIdentityHead);
         }
-
+        /*
         if (!(newNode.orientation ^ (Vector2.SignedAngle(newNode.tangentOffsetTail, newNode.tangentOffsetHead) < 0)))
         {
             newNode.CutChain();
@@ -188,32 +186,57 @@ public class CableRoot : MonoBehaviour
                 this.tangentOffsetTail = headOffset;
             }
         }
-        newNode.storedLength = newNode.pulley.ShapeSurfaceDistance(newNode.tangentIdentityTail, newNode.tangentIdentityHead, newNode.orientation, newNode.CableWidth, false);
+        */
+        jointNew.storedLength = jointNew.body.ShapeSurfaceDistance(jointNew.tIdentityTail, jointNew.tIdentityHead, jointNew.orientation, root.CableHalfWidth, false);
+        initialRestLength -= jointNew.storedLength;
 
-        newNode.InitializeNodes();
+        {
+            Vector2 geometricalCenter = jointNew.body.PulleyCentreGeometrical;
+            jointNew.tangentPointTail = geometricalCenter + jointNew.tangentOffsetTail;
+            jointNew.tangentPointHead = geometricalCenter + jointNew.tangentOffsetHead;
+            Vector2 COMOffset = geometricalCenter - jointNew.body.CenterOfMass;
+            jointNew.tangentOffsetTail += COMOffset;
+            jointNew.tangentOffsetHead += COMOffset;
 
-        this.InitializeNodes();
+            jointNew.tIdentityTailPrev = jointNew.tIdentityTail;
+            jointNew.tIdentityHeadPrev = jointNew.tIdentityHead;
+        }
 
-        float initialRestLength = this.restLength;
+        // re-initialize segments
+        Vector3 distVector = jointNew.tangentPointTail - jointTail.tangentPointHead;
+        jointNew.currentLength = distVector.magnitude;
+        jointNew.cableUnitVector = distVector.normalized;
+        distVector = jointHead.tangentPointTail - jointNew.tangentPointHead;
+        jointHead.currentLength = distVector.magnitude;
+        jointHead.cableUnitVector = distVector.normalized;
 
         // Adjust rest lengths so that tensions are equal:
-        float tension = initialRestLength / (this.currentLength + newNode.currentLength);
-        this.restLength = this.currentLength * tension;
-        newNode.restLength = newNode.currentLength * tension;
+        float tension = initialRestLength / (jointNew.currentLength + jointHead.currentLength);
+        jointNew.restLength = jointNew.currentLength * tension;
+        jointHead.restLength = jointHead.currentLength * tension;
 
-        newNode.Initilizebox(this.triggerWidth);
+        // complete segment initialization
+        jointNew.positionError = jointNew.currentLength - jointNew.restLength;
+        jointNew.segmentTension = TensionEstimation(jointNew);
+        jointHead.positionError = jointHead.currentLength - jointHead.restLength;
+        jointHead.segmentTension = TensionEstimation(jointHead);
 
-        newNode.TriggerBoxUpdate();
-
-        this.TriggerBoxUpdate();
-        */
 
         root.Joints.Insert(segmentIndex, jointNew);
     }
 
     static public bool RemoveCondition(in Joint joint)
     {
-        return joint.storedLength < 0.0f;
+        if (joint.body.CableMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle)
+        {
+            return joint.storedLength < 0.0f;
+        }
+
+        if (joint.storedLength > 0.00001f) return false;
+
+        if (joint.orientation)
+            return Vector2.SignedAngle(joint.tangentOffsetTail, joint.tangentOffsetHead) < 0.0f;
+        return Vector2.SignedAngle(joint.tangentOffsetTail, joint.tangentOffsetHead) > 0.0f;
     }
 
     static public void RemoveJoint(in CableRoot root, in Joint joint)
