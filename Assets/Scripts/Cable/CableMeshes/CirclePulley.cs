@@ -281,4 +281,9 @@ public class CirclePulley : CableMeshInterface
     {
         throw new System.NotImplementedException();
     }
+
+    public override float LoopLength(float cableHalfWidth)
+    {
+        return Mathf.PI * (Radius + cableHalfWidth) * 2;
+    }
 }

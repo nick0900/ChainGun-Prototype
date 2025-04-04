@@ -71,6 +71,7 @@ public class CableEngine : MonoBehaviour
                     AttachedBodies[i] = bodyAttachment;
                 }
             }
+            CableRoot.SetRestlengthsAsCurrent(cable);
         }
 
         foreach (CableMeshInterface body in Bodies)

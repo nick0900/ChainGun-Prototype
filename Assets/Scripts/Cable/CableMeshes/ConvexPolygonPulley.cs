@@ -460,4 +460,14 @@ public class ConvexPolygonPulley : CableMeshInterface
         }
         return pulleyCollider.points[i - 1];
     }
+
+    public override float LoopLength(float cableHalfWidth)
+    {
+        float sum = 0.0f;
+        foreach (VertexData vertex in polygonData)
+        {
+            sum += vertex.edgeLength;
+        }
+        return sum;
+    }
 }

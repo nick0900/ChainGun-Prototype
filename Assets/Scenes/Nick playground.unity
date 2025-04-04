@@ -3028,6 +3028,8 @@ MonoBehaviour:
   - {fileID: 372062225}
   Cables:
   - {fileID: 1610840839}
+  AttachedBodies: []
+  FreeBodies: []
   DebugRenderContacts: 1
 --- !u!4 &991079603
 Transform:
@@ -4986,6 +4988,7 @@ GameObject:
   - component: {fileID: 1610840839}
   - component: {fileID: 1610840843}
   - component: {fileID: 1610840844}
+  - component: {fileID: 1610840845}
   m_Layer: 13
   m_Name: Cable Root
   m_TagString: Untagged
@@ -5010,7 +5013,6 @@ MonoBehaviour:
   Joints:
   - linkType: 1
     body: {fileID: 1610840843}
-    root: {fileID: 0}
     tIdentityTail: 0
     tIdentityHead: 0
     tIdentityTailPrev: 0
@@ -5028,11 +5030,11 @@ MonoBehaviour:
     segmentTension: 0
     cableUnitVector: {x: 0, y: 0}
     orientation: 0
+    startingLoops: 0
     slipping: 0
     frictionFactor: 0
   - linkType: 0
     body: {fileID: 1286890990}
-    root: {fileID: 0}
     tIdentityTail: 0
     tIdentityHead: 0
     tIdentityTailPrev: 0
@@ -5050,11 +5052,11 @@ MonoBehaviour:
     segmentTension: 0
     cableUnitVector: {x: 0, y: 0}
     orientation: 1
+    startingLoops: 0
     slipping: 0
     frictionFactor: 0
   - linkType: 0
     body: {fileID: 31488575}
-    root: {fileID: 0}
     tIdentityTail: 0
     tIdentityHead: 0
     tIdentityTailPrev: 0
@@ -5072,11 +5074,11 @@ MonoBehaviour:
     segmentTension: 0
     cableUnitVector: {x: 0, y: 0}
     orientation: 1
+    startingLoops: 0
     slipping: 0
     frictionFactor: 0
   - linkType: 1
     body: {fileID: 1525189708}
-    root: {fileID: 0}
     tIdentityTail: 0
     tIdentityHead: 0
     tIdentityTailPrev: 0
@@ -5094,6 +5096,7 @@ MonoBehaviour:
     segmentTension: 0
     cableUnitVector: {x: 0, y: 0}
     orientation: 0
+    startingLoops: 0
     slipping: 0
     frictionFactor: 0
 --- !u!61 &1610840840
@@ -5189,6 +5192,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44de4cef792cc2344b815da8acae5500, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1610840845
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1610840838}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9660ef322977e0f428afca4cc34bf911, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cableRoot: {fileID: 0}
 --- !u!1 &1672469943
 GameObject:
   m_ObjectHideFlags: 0

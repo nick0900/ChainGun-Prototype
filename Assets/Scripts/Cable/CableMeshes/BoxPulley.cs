@@ -364,4 +364,9 @@ public class BoxPulley : CableMeshInterface
         }
         return Vector2.zero;
     }
+
+    public override float LoopLength(float cableHalfWidth)
+    {
+        return 2 * (pulleyCollider.size.x + pulleyCollider.size.y + cableHalfWidth * 4);
+    }
 }

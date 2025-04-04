@@ -53,6 +53,8 @@ abstract public class CableMeshInterface : CableMeshGeneration
     //a orientation of true means the function will return the rightmost point
     abstract public Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float cableHalfWidth, out float identity);
 
+    abstract public float LoopLength(float cableHalfWidth);
+
     static public void TangentAlgorithm(CableMeshInterface pulley1, CableMeshInterface pulley2, out Vector2 tangent1, out Vector2 tangent2, out float tangentIdentity1, out float tangentIdentity2, bool orientation1, bool orientation2, float cableHalfWidth)
     {
         if ((pulley1.CableMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle) && (pulley2.CableMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle))

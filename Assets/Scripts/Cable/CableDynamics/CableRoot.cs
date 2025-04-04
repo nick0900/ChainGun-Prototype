@@ -41,6 +41,7 @@ public class CableRoot : MonoBehaviour
         [HideInInspector] public Vector2 cableUnitVector = Vector2.zero;
 
         public bool orientation = false;
+        public int startingLoops = 0;
 
         [HideInInspector] public bool slipping = false;
         [HideInInspector] public float frictionFactor = 1.0f;
@@ -242,5 +243,37 @@ public class CableRoot : MonoBehaviour
     static public void RemoveJoint(in CableRoot root, in Joint joint)
     {
 
+    }
+
+    static public void SetRestlengthsAsCurrent(CableRoot cable)
+    {
+        CableRoot.Joint joint;
+        for (int i = 1; i < cable.Joints.Count - 1; i++)
+        {
+            joint = cable.Joints[i];
+            CableRoot.Joint jointTail = cable.Joints[i - 1];
+            CableRoot.Joint jointHead = cable.Joints[i + 1];
+
+            CableRoot.UpdatePulley(ref joint, ref jointTail, ref jointHead, cable.CableHalfWidth);
+            CableRoot.InitializeSegment(ref joint, jointTail);
+
+            cable.Joints[i] = joint;
+            cable.Joints[i - 1] = jointTail;
+            cable.Joints[i + 1] = jointHead;
+        }
+        joint = cable.Joints[cable.Joints.Count - 1];
+        CableRoot.InitializeSegment(ref joint, cable.Joints[cable.Joints.Count - 2]);
+        cable.Joints[cable.Joints.Count - 1] = joint;
+
+        for (int i = 1; i < cable.Joints.Count; i++)
+        {
+            joint = cable.Joints[i];
+            if (joint.linkType == LinkType.Rolling)
+            {
+                joint.storedLength = joint.body.ShapeSurfaceDistance(joint.tIdentityTail, joint.tIdentityHead, joint.orientation, cable.CableHalfWidth, false);
+                joint.storedLength += joint.startingLoops * joint.body.LoopLength(cable.CableHalfWidth);
+            }
+            joint.restLength = joint.currentLength;
+        }
     }
 }

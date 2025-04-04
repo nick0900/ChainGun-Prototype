@@ -61,6 +61,11 @@ public class PointPulley : CableMeshInterface
         throw new System.NotImplementedException();
     }
 
+    public override float LoopLength(float cableHalfWidth)
+    {
+        throw new System.NotImplementedException();
+    }
+
     public override bool Orientation(in Vector2 tailPrevious, in Vector2 headPrevious)
     {
         throw new System.NotImplementedException();
