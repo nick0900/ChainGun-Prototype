@@ -320,8 +320,9 @@ public class CableEngine : MonoBehaviour
         // Remove Joints
         foreach (CableRoot cable in cables)
         {
-            foreach (CableRoot.Joint joint in cable.Joints)
+            for (int k = 0; k < cable.Joints.Count; k++)
             {
+                CableRoot.Joint joint = cable.Joints[k];
                 if (CableRoot.RemoveCondition(in joint))
                 {
                     int i = attachedBodies.FindIndex(x => x.body == joint.body);
@@ -349,7 +350,8 @@ public class CableEngine : MonoBehaviour
                         freeBodies.Add(bodyAttachment);
                     }
 
-                    CableRoot.RemoveJoint(in cable, in joint);
+                    CableRoot.RemoveJoint(cable, joint);
+                    i--;
                 }
             }
         }
