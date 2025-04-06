@@ -47,7 +47,7 @@ public class CableRoot : MonoBehaviour
 
         public float storedLength = 0.0f;
         public float restLength = 1.0f;
-        [HideInInspector] public float currentLength = 0;
+        public float currentLength = 0;
         [HideInInspector] public float positionError = 0;
         [HideInInspector] public float segmentTension = 0.0f;
 

@@ -130,10 +130,10 @@ public class CableEngine : MonoBehaviour
         PinchNarrowPhase(in NearContacts, ref Manifolds);
         ConfirmPinchContacts(ref Manifolds);
 
+        RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
         SegmentHits.Clear();
         SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
-        SpliceJoints(ref Cables, in SegmentHits, ref AttachedBodies, ref FreeBodies);
-
+        AddJoints(in SegmentHits, ref AttachedBodies, ref FreeBodies);
     }
 
     static void UpdateCables(in List<CableRoot> cables)
@@ -196,7 +196,7 @@ public class CableEngine : MonoBehaviour
                 bool isStatic2 = (b2.PulleyAttachedRigidBody == null) || (b2.PulleyAttachedRigidBody.isKinematic);
                 Bounds aabb2 = b2.PulleyBounds;
 
-                if (isStatic1 && isStatic2) continue;
+                //if (isStatic1 && isStatic2) continue;
 
                 if (CableMeshInterface.AABBMarginCheck(aabb1, aabb2, margin1))
                 {
@@ -242,6 +242,11 @@ public class CableEngine : MonoBehaviour
                 {
                     if (body.CableMeshPrimitiveType == CMPrimitives.Point) continue;
                     if ((joint.body == body) || (jointTail.body == body)) continue;
+                    if (joint.currentLength < 0.001f)
+                    {
+                        if (((i + 1) < cable.Joints.Count) && (cable.Joints[i + 1].body == body)) continue;
+                        if (((i - 2) < 0) && (cable.Joints[i - 2].body == body)) continue;
+                    }
 
                     Vector2 lineNormal = new Vector2(joint.cableUnitVector.y, -joint.cableUnitVector.x);
 
@@ -276,7 +281,7 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void SpliceJoints(ref List<CableRoot> cables, in List<SegmentHit> segmentHits, ref List<BodyAttachmentManifold> attachedBodies, ref List<BodyAttachmentManifold> freeBodies)
+    static void AddJoints(in List<SegmentHit> segmentHits, ref List<BodyAttachmentManifold> attachedBodies, ref List<BodyAttachmentManifold> freeBodies)
     {
         // Create new Joints
         foreach (SegmentHit hit in segmentHits)
@@ -316,8 +321,10 @@ public class CableEngine : MonoBehaviour
                 attachedBodies.Add(attachement);
             }
         }
+    }
 
-        // Remove Joints
+    static void RemoveJoints(ref List<CableRoot> cables, ref List<BodyAttachmentManifold> attachedBodies, ref List<BodyAttachmentManifold> freeBodies)
+    {
         foreach (CableRoot cable in cables)
         {
             for (int k = 0; k < cable.Joints.Count; k++)
@@ -335,7 +342,7 @@ public class CableEngine : MonoBehaviour
                             attachment.greatestMargin = attachment.joints[0].root.CableHalfWidth * 2;
                             for (int j = 1; j < attachment.joints.Count; j++)
                             {
-                                if (attachment.greatestMargin < attachment.joints[j].root.CableHalfWidth*2)
+                                if (attachment.greatestMargin < attachment.joints[j].root.CableHalfWidth * 2)
                                 {
                                     attachment.greatestMargin = attachment.joints[j].root.CableHalfWidth * 2;
                                 }
