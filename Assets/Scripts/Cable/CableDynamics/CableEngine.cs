@@ -119,8 +119,10 @@ public class CableEngine : MonoBehaviour
         SegmentHits = new List<SegmentHit>();
     }
 
+    static uint Framecount = 0;
     void FixedUpdate()
     {
+        Framecount++;
         UpdateCables(in Cables);
 
         NearContacts.Clear();
@@ -242,11 +244,6 @@ public class CableEngine : MonoBehaviour
                 {
                     if (body.CableMeshPrimitiveType == CMPrimitives.Point) continue;
                     if ((joint.body == body) || (jointTail.body == body)) continue;
-                    if (joint.currentLength < 0.001f)
-                    {
-                        if (((i + 1) < cable.Joints.Count) && (cable.Joints[i + 1].body == body)) continue;
-                        if (((i - 2) < 0) && (cable.Joints[i - 2].body == body)) continue;
-                    }
 
                     Vector2 lineNormal = new Vector2(joint.cableUnitVector.y, -joint.cableUnitVector.x);
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static CableRoot;
 
 [System.Serializable]
 public class CirclePulley : CableMeshInterface
@@ -118,17 +119,25 @@ public class CirclePulley : CableMeshInterface
 
         if (d.magnitude < r2 + cableHalfWidth)
         {
+            if (d == Vector2.zero)
+            {
+                //should implement better handling of when bodies perfectly align their positions. but should be exceedingly rare to happen
+                //should implement for the other body types and cirlce circle tangents
+                d = Vector2.up;
+            }
             //pulley intersection
-            d = (d / d.magnitude) * (r2 + cableHalfWidth);
+            tangentOffset2 = -(d / d.magnitude) * (r2 + cableHalfWidth);
         }
+        else
+        {
+            float alpha = d.x >= 0 ? Mathf.Asin(d.y / d.magnitude) : Mathf.PI - Mathf.Asin(d.y / d.magnitude);
 
-        float alpha = d.x >= 0 ? Mathf.Asin(d.y / d.magnitude) : Mathf.PI - Mathf.Asin(d.y / d.magnitude);
+            float phi = Mathf.Asin((r2 + cableHalfWidth) / d.magnitude);
 
-        float phi = Mathf.Asin((r2 + cableHalfWidth) / d.magnitude);
+            alpha = orientation2 ? alpha - Mathf.PI / 2 - phi : alpha + Mathf.PI / 2 + phi;
 
-        alpha = orientation2 ? alpha - Mathf.PI / 2 - phi : alpha + Mathf.PI / 2 + phi;
-
-        tangentOffset2 = (r2 + cableHalfWidth) * new Vector2(Mathf.Cos(alpha), Mathf.Sin(alpha));
+            tangentOffset2 = (r2 + cableHalfWidth) * new Vector2(Mathf.Cos(alpha), Mathf.Sin(alpha));
+        }
 
         float globalAngle = -Vector2.SignedAngle(tangentOffset2, Vector2.left);
         angle = globalAngle - pulleyCollider.transform.rotation.eulerAngles.z + 180.0f;
