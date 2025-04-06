@@ -14,9 +14,21 @@ public class CableRoot : MonoBehaviour
         Hybrid
     }
 
+    static private uint IdGenerator = 0;
+    static public uint GetNewJointID 
+    {  
+        get 
+        {
+            IdGenerator++;
+            return IdGenerator; 
+        } 
+    }
+
     [System.Serializable]
     public class Joint
     {
+        public uint id = 0;
+
         public LinkType linkType = LinkType.Rolling;
 
         public CableMeshInterface body = null;
@@ -115,13 +127,14 @@ public class CableRoot : MonoBehaviour
     }
 
 
-    static public void AddJoint(CableRoot root, Joint segment, CableMeshInterface body)
+    static public Joint AddJoint(CableRoot root, Joint segment, CableMeshInterface body)
     {
         int segmentIndex = root.Joints.FindIndex(x => x == segment);
         Joint jointHead = segment;
         Joint jointTail = root.Joints[segmentIndex - 1];
         Joint jointNew = new Joint();
 
+        jointNew.id = GetNewJointID;
         jointNew.linkType = LinkType.Rolling;
         jointNew.body = body;
         jointNew.orientation = body.Orientation(jointTail.tangentPointHead, jointHead.tangentPointTail);
@@ -229,6 +242,7 @@ public class CableRoot : MonoBehaviour
 
 
         root.Joints.Insert(segmentIndex, jointNew);
+        return jointNew;
     }
 
     static public bool RemoveCondition(in Joint joint)

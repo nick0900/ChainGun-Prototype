@@ -36,6 +36,7 @@ public class CableEngine : MonoBehaviour
         {
             for (int i = 0; i < cable.Joints.Count; i++)
             {
+                cable.Joints[i].id = CableRoot.GetNewJointID;
                 CableRoot.Joint joint = cable.Joints[i];
                 if (joint.body == null)
                 {
@@ -194,16 +195,15 @@ public class CableEngine : MonoBehaviour
                 CableMeshInterface b2 = freeBodies[j].body;
                 bool isStatic2 = (b2.PulleyAttachedRigidBody == null) || (b2.PulleyAttachedRigidBody.isKinematic);
                 Bounds aabb2 = b2.PulleyBounds;
-                float margin = Mathf.Max(margin1, attachedBodies[j].greatestMargin);
 
                 if (isStatic1 && isStatic2) continue;
 
-                if (CableMeshInterface.AABBMarginCheck(aabb1, aabb2, Mathf.Max(margin1, margin)))
+                if (CableMeshInterface.AABBMarginCheck(aabb1, aabb2, margin1))
                 {
                     NearContact contact = new NearContact();
                     contact.b1 = attachedBodies[i];
                     contact.b2 = freeBodies[j];
-                    contact.margin = margin;
+                    contact.margin = margin1;
                     nearContacts.Add(contact);
                 }
             }
@@ -281,13 +281,14 @@ public class CableEngine : MonoBehaviour
         // Create new Joints
         foreach (SegmentHit hit in segmentHits)
         {
+            CableRoot.Joint newJoint = CableRoot.AddJoint(hit.cable, hit.joint, hit.body);
             int i = attachedBodies.FindIndex(x => x.body == hit.body);
             if (i != -1)
             {
                 BodyAttachmentManifold attachement = attachedBodies[i];
 
                 AttachedJoint attachedJoint = new AttachedJoint();
-                attachedJoint.joint = hit.joint;
+                attachedJoint.joint = newJoint;
                 attachedJoint.root = hit.cable;
                 attachement.joints.Add(attachedJoint);
 
@@ -307,14 +308,13 @@ public class CableEngine : MonoBehaviour
                 attachement.body = hit.body;
                 attachement.joints = new List<AttachedJoint>();
                 AttachedJoint attachedJoint = new AttachedJoint();
-                attachedJoint.joint = hit.joint;
+                attachedJoint.joint = newJoint;
                 attachedJoint.root = hit.cable;
                 attachement.joints.Add(attachedJoint);
                 attachement.greatestMargin = hit.cable.CableHalfWidth * 2;
 
                 attachedBodies.Add(attachement);
             }
-            CableRoot.AddJoint(hit.cable, hit.joint, hit.body);
         }
 
         // Remove Joints
@@ -329,7 +329,7 @@ public class CableEngine : MonoBehaviour
                     BodyAttachmentManifold attachment = attachedBodies[i];
                     if (attachment.joints.Count > 1)
                     {
-                        attachment.joints.RemoveAt(attachment.joints.FindIndex(x => x.joint == joint));
+                        attachment.joints.RemoveAt(attachment.joints.FindIndex(x => x.joint.id == joint.id));
                         if (attachment.greatestMargin <= cable.CableHalfWidth * 2)
                         {
                             attachment.greatestMargin = attachment.joints[0].root.CableHalfWidth * 2;
