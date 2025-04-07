@@ -19,7 +19,7 @@ public class CableVisuals : MonoBehaviour
         Destroy(lineRenderer);
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         lineRenderer.startWidth = cableRoot.CableHalfWidth * 2;
         lineRenderer.endWidth = cableRoot.CableHalfWidth * 2;

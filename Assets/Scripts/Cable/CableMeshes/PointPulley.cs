@@ -5,8 +5,8 @@ using UnityEngine;
 [System.Serializable]
 public class PointPulley : CableMeshInterface
 {
-    Collider2D pulleyCollider = null;
-    Rigidbody2D rb2d = null;
+    [SerializeField][HideInInspector] Collider2D pulleyCollider = null;
+    [SerializeField][HideInInspector] Rigidbody2D rb2d = null;
 
     public override Vector2 PulleyCentreGeometrical { get { return this.transform.position; } }
 

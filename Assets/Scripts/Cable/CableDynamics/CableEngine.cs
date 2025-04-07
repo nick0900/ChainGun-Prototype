@@ -8,21 +8,18 @@ using static CableRoot;
 
 public class CableEngine : MonoBehaviour
 {
+    public uint SolverIterations = 10;
+    public float SolverBias = 0.2f;
+
     public List<CableMeshInterface> Bodies;
     public List<CableRoot> Cables;
 
-    [System.Serializable]
-    private struct AttachedJoint
-    {
-        public CableRoot.Joint joint;
-        public CableRoot root;
-    }
     [System.Serializable]
     private struct BodyAttachmentManifold
     {
         public CableMeshInterface body;
         public float greatestMargin;
-        public List<AttachedJoint> joints;
+        public List<(CableRoot.Joint joint, CableRoot root)> joints;
     }
     [SerializeField] private List<BodyAttachmentManifold> AttachedBodies;
     [SerializeField] private List<BodyAttachmentManifold> FreeBodies;
@@ -49,24 +46,21 @@ public class CableEngine : MonoBehaviour
                     Bodies.Add(joint.body);
                 }
 
-                AttachedJoint attachedJoint = new AttachedJoint();
-                attachedJoint.joint = joint;
-                attachedJoint.root = cable;
 
                 int index = AttachedBodies.FindIndex(x => x.body == joint.body);
                 if (index == -1)
                 {
                     BodyAttachmentManifold bodyAttachment = new BodyAttachmentManifold();
                     bodyAttachment.body = joint.body;
-                    bodyAttachment.joints = new List<AttachedJoint>();
-                    bodyAttachment.joints.Add(attachedJoint);
+                    bodyAttachment.joints = new List<(CableRoot.Joint joint, CableRoot root)>();
+                    bodyAttachment.joints.Add((joint, cable));
                     bodyAttachment.greatestMargin = cable.CableHalfWidth * 2;
                     AttachedBodies.Add(bodyAttachment);
                 }
                 else
                 {
                     BodyAttachmentManifold bodyAttachment = AttachedBodies[i];
-                    bodyAttachment.joints.Add(attachedJoint);
+                    bodyAttachment.joints.Add((joint, cable));
                     if (bodyAttachment.greatestMargin < cable.CableHalfWidth * 2)
                         bodyAttachment.greatestMargin = cable.CableHalfWidth * 2;
                     AttachedBodies[i] = bodyAttachment;
@@ -111,12 +105,15 @@ public class CableEngine : MonoBehaviour
 
     private List<SegmentHit> SegmentHits;
 
+    private List<(CableRoot.Joint joint, int index, CableRoot cable)> SegmentConstraints;
+
     public bool DebugRenderContacts = false;
     void Start()
     {
         NearContacts = new List<NearContact>();
         Manifolds = new List<PotentialPinchManifold>();
         SegmentHits = new List<SegmentHit>();
+        SegmentConstraints = new List<(CableRoot.Joint joint, int index, CableRoot cable)>();
     }
 
     static uint Framecount = 0;
@@ -140,7 +137,10 @@ public class CableEngine : MonoBehaviour
 
         UpdateSlippingConditions(in Cables);
 
-        InitializeSegmentConstraints(in Cables);
+        SegmentConstraints.Clear();
+        InitializeSegmentConstraints(in Cables, ref SegmentConstraints);
+
+        Solver(in SegmentConstraints, SolverIterations, SolverBias);
     }
 
     static void UpdateCables(in List<CableRoot> cables)
@@ -294,10 +294,7 @@ public class CableEngine : MonoBehaviour
             {
                 BodyAttachmentManifold attachement = attachedBodies[i];
 
-                AttachedJoint attachedJoint = new AttachedJoint();
-                attachedJoint.joint = newJoint;
-                attachedJoint.root = hit.cable;
-                attachement.joints.Add(attachedJoint);
+                attachement.joints.Add((newJoint, hit.cable));
 
                 if (attachement.greatestMargin < hit.cable.CableHalfWidth * 2)
                 {
@@ -313,11 +310,8 @@ public class CableEngine : MonoBehaviour
                 BodyAttachmentManifold attachement = new BodyAttachmentManifold();
 
                 attachement.body = hit.body;
-                attachement.joints = new List<AttachedJoint>();
-                AttachedJoint attachedJoint = new AttachedJoint();
-                attachedJoint.joint = newJoint;
-                attachedJoint.root = hit.cable;
-                attachement.joints.Add(attachedJoint);
+                attachement.joints = new List<(CableRoot.Joint joint, CableRoot root)>();
+                attachement.joints.Add((newJoint, hit.cable));
                 attachement.greatestMargin = hit.cable.CableHalfWidth * 2;
 
                 attachedBodies.Add(attachement);
@@ -377,16 +371,37 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void InitializeSegmentConstraints(in List<CableRoot> cables)
+    static void InitializeSegmentConstraints(in List<CableRoot> cables, ref List<(CableRoot.Joint joint, int index, CableRoot cable)> constraints)
     {
         foreach(CableRoot cable in cables)
         {
             CableRoot.Joint groupStart = null;
             int groupStartIndex = -1;
             int groupCount = 0;
-            for (int i = 0; i < cable.Joints.Count; i++)
+            for (int i = 1; i < cable.Joints.Count; i++)
             {
-                CableConstraintsInitialization(in cable, i, ref groupStart, ref groupStartIndex, ref groupCount);
+                CableRoot.Joint constraintJoint = JointConstraintInitialization(in cable, i, ref groupStart, ref groupStartIndex, ref groupCount);
+                if (constraintJoint != null)
+                    constraints.Add((constraintJoint, i, cable));
+            }
+        }
+    }
+
+    static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> constraints, uint iterations, float bias)
+    {
+        for (int i = 0; i < iterations; i++)
+        {
+            foreach ((CableRoot.Joint joint, int index, CableRoot cable) in constraints)
+            {
+                if (joint.slipping)
+                {
+                    // slip group solve
+                }
+                else
+                {
+                    CableRoot.SegmentConstrainSolve(joint, cable.Joints[index - 1], bias);
+                }
+                // pinch solving
             }
         }
     }
