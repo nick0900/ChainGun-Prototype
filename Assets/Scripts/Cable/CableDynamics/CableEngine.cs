@@ -395,7 +395,7 @@ public class CableEngine : MonoBehaviour
             {
                 if (joint.slipping)
                 {
-                    // slip group solve
+                    CableRoot.SlipGroupConstrainSolve(joint, index, cable, bias);
                 }
                 else
                 {
