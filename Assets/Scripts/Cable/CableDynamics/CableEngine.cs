@@ -133,9 +133,14 @@ public class CableEngine : MonoBehaviour
         ConfirmPinchContacts(ref Manifolds);
 
         RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
+
         SegmentHits.Clear();
         SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
         AddJoints(in SegmentHits, ref AttachedBodies, ref FreeBodies);
+
+        UpdateSlippingConditions(in Cables);
+
+        InitializeSegmentConstraints(in Cables);
     }
 
     static void UpdateCables(in List<CableRoot> cables)
@@ -357,6 +362,31 @@ public class CableEngine : MonoBehaviour
                     CableRoot.RemoveJoint(cable, joint);
                     i--;
                 }
+            }
+        }
+    }
+
+    static void UpdateSlippingConditions(in List<CableRoot> cables)
+    {
+        foreach (CableRoot cable in cables)
+        {
+            for (int i = 1; i < cable.Joints.Count - 1; i++)
+            {
+                CableRoot.CableSlipConditionsUpdate(cable, cable.Joints[i], cable.Joints[i + 1]);
+            }
+        }
+    }
+
+    static void InitializeSegmentConstraints(in List<CableRoot> cables)
+    {
+        foreach(CableRoot cable in cables)
+        {
+            CableRoot.Joint groupStart = null;
+            int groupStartIndex = -1;
+            int groupCount = 0;
+            for (int i = 0; i < cable.Joints.Count; i++)
+            {
+                CableConstraintsInitialization(in cable, i, ref groupStart, ref groupStartIndex, ref groupCount);
             }
         }
     }
