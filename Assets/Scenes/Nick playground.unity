@@ -204,7 +204,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   protectSettings: 0
   submesh: 0
-  infiniteFriction: 1
+  infiniteFriction: 0
   constantFriction: 0
   staticFrictionCoeff: 0
   kineticFrictionCoeff: 0
@@ -232,7 +232,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 31488571}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 47.69, y: 2.26, z: 0}
+  m_LocalPosition: {x: 48.26, y: 2.62, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -262,7 +262,7 @@ Rigidbody2D:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 31488571}
   m_BodyType: 0
-  m_Simulated: 0
+  m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
@@ -273,7 +273,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 3
+  m_Constraints: 7
 --- !u!1 &41621442
 GameObject:
   m_ObjectHideFlags: 0
@@ -4000,7 +4000,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1275238214}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.92, z: -0.2}
+  m_LocalPosition: {x: 0, y: -0.92, z: 0}
   m_LocalScale: {x: 0.25521, y: 0.25521, z: 0.25521}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4152,7 +4152,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   protectSettings: 0
   submesh: 0
-  infiniteFriction: 1
+  infiniteFriction: 0
   constantFriction: 0
   staticFrictionCoeff: 0
   kineticFrictionCoeff: 0
@@ -4180,7 +4180,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286890986}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 46.31, y: 2.29, z: 0}
+  m_LocalPosition: {x: 45.82, y: 2.62, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4210,7 +4210,7 @@ Rigidbody2D:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286890986}
   m_BodyType: 0
-  m_Simulated: 0
+  m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
@@ -4221,7 +4221,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 0
+  m_Constraints: 7
 --- !u!1 &1350392631
 GameObject:
   m_ObjectHideFlags: 0
@@ -4958,6 +4958,7 @@ GameObject:
   - component: {fileID: 1525189711}
   - component: {fileID: 1525189709}
   - component: {fileID: 1525189708}
+  - component: {fileID: 1525189712}
   m_Layer: 13
   m_Name: Cable end
   m_TagString: Untagged
@@ -5019,7 +5020,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1525189707}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 49.04, y: 1.29, z: 0}
+  m_LocalPosition: {x: 47.64, y: 3.38, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5027,6 +5028,27 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 26
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!50 &1525189712
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525189707}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 6
 --- !u!1 &1610840838
 GameObject:
   m_ObjectHideFlags: 0
@@ -5041,6 +5063,7 @@ GameObject:
   - component: {fileID: 1610840843}
   - component: {fileID: 1610840844}
   - component: {fileID: 1610840845}
+  - component: {fileID: 1610840846}
   m_Layer: 13
   m_Name: Cable Root
   m_TagString: Untagged
@@ -5134,7 +5157,7 @@ MonoBehaviour:
     positionError: 0
     segmentTension: 0
     cableUnitVector: {x: 0, y: 0}
-    orientation: 0
+    orientation: 1
     startingLoops: 0
     slipping: 0
     frictionFactor: 0
@@ -5201,7 +5224,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1610840838}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 45.77, y: 3.31, z: 0}
+  m_LocalPosition: {x: 46.6, y: 3.31, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5248,12 +5271,33 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1610840838}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9660ef322977e0f428afca4cc34bf911, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   cableRoot: {fileID: 0}
+--- !u!50 &1610840846
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1610840838}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 6
 --- !u!1 &1672469943
 GameObject:
   m_ObjectHideFlags: 0
@@ -5593,7 +5637,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1725862750}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.92, z: -0.2}
+  m_LocalPosition: {x: 0, y: -0.92, z: 0}
   m_LocalScale: {x: 0.25521, y: 0.25521, z: 0.25521}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -6137,7 +6181,7 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1713085059}
   m_Father: {fileID: 2015910259}
@@ -6953,10 +6997,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   protectSettings: 0
   submesh: 0
-  infiniteFriction: 1
+  infiniteFriction: 0
   constantFriction: 0
-  staticFrictionCoeff: 0.2
-  kineticFrictionCoeff: 0.1
+  staticFrictionCoeff: 0.6
+  kineticFrictionCoeff: 0.4
   pulleyCollider: {fileID: 2015910255}
 --- !u!114 &2015910258
 MonoBehaviour:
@@ -6981,7 +7025,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2015910253}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 46.27, y: 5.48, z: 0}
+  m_LocalPosition: {x: 47.11, y: 3.22, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -7009,7 +7053,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 3
+  m_Constraints: 0
 --- !u!1 &2026122659
 GameObject:
   m_ObjectHideFlags: 0

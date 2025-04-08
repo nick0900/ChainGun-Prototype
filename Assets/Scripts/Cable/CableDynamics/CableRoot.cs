@@ -429,7 +429,7 @@ public class CableRoot : MonoBehaviour
 
 
 
-    static public Joint JointConstraintInitialization(in CableRoot cable, int jointIndex, ref Joint slippingJointsStart, ref int groupStartIndex, ref int slippingCount)
+    static public Joint JointConstraintInitialization(in CableRoot cable, int jointIndex, ref Joint slippingJointsStart, ref int constraintIndex, ref int slippingCount)
     {
         Joint constraint = null;
         Joint joint = cable.Joints[jointIndex];
@@ -440,7 +440,7 @@ public class CableRoot : MonoBehaviour
             if (slippingJointsStart == null)
             {
                 slippingJointsStart = joint;
-                groupStartIndex = jointIndex;
+                constraintIndex = jointIndex;
                 slippingCount = 0;
             }
             else
@@ -457,10 +457,10 @@ public class CableRoot : MonoBehaviour
             {
                 slippingJointsStart.positionError += joint.positionError;
                 slippingJointsStart.slipJointsCount = slippingCount;
-                SlippingBalanceTension(in cable, groupStartIndex);
+                SlippingBalanceTension(in cable, constraintIndex);
                 if (slippingJointsStart.positionError > 0.0f)
                 {
-                    InverseMassDenominatorCalculationGroup(cable, slippingJointsStart, groupStartIndex);
+                    InverseMassDenominatorCalculationGroup(cable, slippingJointsStart, constraintIndex);
                     if (slippingJointsStart.inverseEffectiveMassDenominator > 0.0f) constraint = slippingJointsStart;
                 }
 
@@ -470,6 +470,7 @@ public class CableRoot : MonoBehaviour
             {
                 if (joint.positionError > 0.0f)
                 {
+                    constraintIndex = jointIndex;
                     InverseMassDenominatorCalculation(joint, cable.Joints[jointIndex - 1]);
                     if (joint.inverseEffectiveMassDenominator > 0.0f) constraint = joint;
                 }
@@ -510,7 +511,7 @@ public class CableRoot : MonoBehaviour
         float startRestDelta = -sumB / (1 + sumA);
         cable.Joints[groupIndex].restLength += startRestDelta;
 
-        for (int i = 0; i < count; i++)
+        for (int i = groupIndex; i < groupIndex + count; i++)
         {
             Joint joint = cable.Joints[i + 1];
             joint.restLength += joint.SlipA * startRestDelta + joint.SlipB;
@@ -560,29 +561,37 @@ public class CableRoot : MonoBehaviour
         segment.inverseEffectiveMassDenominator = 1 / segment.inverseEffectiveMassDenominator;
     }
     
-    static Vector2 M(int i, int max, Joint joint, Joint jointHead, in CableRoot cable, int startIndex)
+    static Vector2 M(int i, int max, Joint joint, in CableRoot cable, int groupIndex)
     {
         if (i == 0)
         {
+            Joint jointHead = cable.Joints[groupIndex + i];
             return -jointHead.cableUnitVector / joint.body.PulleyAttachedRigidBody.mass;
         }
         if (i == max)
         {
-            return FrictionCompounded(cable, startIndex, i - 2) * joint.cableUnitVector / joint.body.PulleyAttachedRigidBody.mass;
+            return FrictionCompounded(cable, groupIndex, groupIndex + i - 2) * joint.cableUnitVector / joint.body.PulleyAttachedRigidBody.mass;
         }
-        return (FrictionCompounded(cable, startIndex, i - 2) * joint.cableUnitVector - FrictionCompounded(cable, startIndex, i - 1) * jointHead.cableUnitVector) / joint.body.PulleyAttachedRigidBody.mass;
+        {
+            Joint jointHead = cable.Joints[groupIndex + i];
+            return (FrictionCompounded(cable, groupIndex, groupIndex + i - 2) * joint.cableUnitVector - FrictionCompounded(cable, groupIndex, i - 1) * jointHead.cableUnitVector) / joint.body.PulleyAttachedRigidBody.mass;
+        }
     }
-    static Vector3 I(int i, int max, Joint joint, Joint jointHead, in CableRoot cable, int startIndex)
+    static Vector3 I(int i, int max, Joint joint, in CableRoot cable, int groupIndex)
     {
         if (i == 0)
         {
+            Joint jointHead = cable.Joints[groupIndex + i];
             return -Vector3.Cross(joint.tangentOffsetHead, jointHead.cableUnitVector) / joint.body.PulleyAttachedRigidBody.inertia;
         }
         if (i == max)
         {
-            return FrictionCompounded(cable, startIndex, i - 2) * Vector3.Cross(joint.tangentOffsetTail, joint.cableUnitVector) / joint.body.PulleyAttachedRigidBody.inertia;
+            return FrictionCompounded(cable, groupIndex, groupIndex + i - 2) * Vector3.Cross(joint.tangentOffsetTail, joint.cableUnitVector) / joint.body.PulleyAttachedRigidBody.inertia;
         }
-        return (FrictionCompounded(cable, startIndex, i - 2) * Vector3.Cross(joint.tangentOffsetTail, joint.cableUnitVector) - FrictionCompounded(cable, startIndex, i - 1) * Vector3.Cross(joint.tangentOffsetHead, jointHead.cableUnitVector)) / joint.body.PulleyAttachedRigidBody.inertia;
+        {
+            Joint jointHead = cable.Joints[groupIndex + i];
+            return (FrictionCompounded(cable, groupIndex, groupIndex + i - 2) * Vector3.Cross(joint.tangentOffsetTail, joint.cableUnitVector) - FrictionCompounded(cable, groupIndex, groupIndex + i - 1) * Vector3.Cross(joint.tangentOffsetHead, jointHead.cableUnitVector)) / joint.body.PulleyAttachedRigidBody.inertia;
+        }
     }
     static void InverseMassDenominatorCalculationGroup(CableRoot cable, CableRoot.Joint group, int groupIndex)
     {
@@ -595,14 +604,13 @@ public class CableRoot : MonoBehaviour
         for (int i = 0; i <= slippingCount + 1; i++)
         {
             Joint joint = cable.Joints[groupIndex + i - 1];
-            Joint jointHead = cable.Joints[groupIndex + i];
             Rigidbody2D RB2D = joint.body.PulleyAttachedRigidBody;
             if (RB2D != null && !RB2D.isKinematic)
             {
-                massDenominators[i] = M(groupIndex + i, groupIndex + slippingCount + 1, joint, jointHead, cable, groupIndex);
+                massDenominators[i] = M(i, slippingCount + 1, joint, cable, groupIndex);
                 if (RB2D.inertia != 0)
                 {
-                    inertiaDenominators[i] = I(groupIndex + i, groupIndex + slippingCount + 1, joint, jointHead, cable, groupIndex);
+                    inertiaDenominators[i] = I(i, slippingCount + 1, joint, cable, groupIndex);
                 }
                 else
                 {
@@ -633,7 +641,7 @@ public class CableRoot : MonoBehaviour
         group.inverseEffectiveMassDenominator = 1 / group.inverseEffectiveMassDenominator;
     }
 
-    static public void SegmentConstrainSolve(Joint segment, Joint segmentTail, float bias)
+    static public void SegmentConstraintSolve(Joint segment, Joint segmentTail, float bias)
     {
         Rigidbody2D RB2D = segment.body.PulleyAttachedRigidBody;
         Rigidbody2D tailRB2D = segmentTail.body.PulleyAttachedRigidBody;
@@ -642,6 +650,7 @@ public class CableRoot : MonoBehaviour
                          (tailRB2D != null ? tailRB2D.GetPointVelocity(segmentTail.tangentPointHead) : Vector2.zero);
 
         float velConstraintValue = Vector2.Dot(relVel, segment.cableUnitVector);
+        print("stick " + velConstraintValue);
         float velocitySteering = bias * segment.positionError / Time.fixedDeltaTime;
 
         //impulse intensity:  
@@ -674,7 +683,7 @@ public class CableRoot : MonoBehaviour
         }
     }
 
-    static public void SlipGroupConstrainSolve(CableRoot.Joint group, int Groupindex, CableRoot cable, float bias)
+    static public void SlipGroupConstraintSolve(CableRoot.Joint group, int Groupindex, CableRoot cable, float bias)
     {
         //Sum the current velocity errors
         float velocityError = 0;
@@ -685,11 +694,18 @@ public class CableRoot : MonoBehaviour
             Rigidbody2D RB2D = joint.body.PulleyAttachedRigidBody;
             Rigidbody2D tailRB2D = jointTail.body.PulleyAttachedRigidBody;
 
-            velocityError += Vector2.Dot(RB2D.velocity - tailRB2D.velocity, joint.cableUnitVector) +
-                RB2D.angularVelocity * Vector3.Cross(joint.tangentOffsetTail, joint.cableUnitVector).z -
-                tailRB2D.angularVelocity * Vector3.Cross(jointTail.tangentOffsetHead, joint.cableUnitVector).z;
+            if (RB2D != null && !RB2D.isKinematic)
+            {
+                velocityError += Vector2.Dot(RB2D.velocity, joint.cableUnitVector) +
+                    (RB2D.angularVelocity * Mathf.Deg2Rad) * Vector3.Cross(joint.tangentOffsetTail, joint.cableUnitVector).z;
+            }
+            if (tailRB2D != null && !tailRB2D.isKinematic)
+            {
+                velocityError -= Vector2.Dot(tailRB2D.velocity, joint.cableUnitVector) +
+                    (tailRB2D.angularVelocity * Mathf.Deg2Rad) * Vector3.Cross(jointTail.tangentOffsetHead, joint.cableUnitVector).z;
+            }
         }
-
+        print("slip " + velocityError + " " + group.positionError);
         float velocitySteering = bias * group.positionError / Time.fixedDeltaTime;
 
         //impulse intensity:  
@@ -708,7 +724,7 @@ public class CableRoot : MonoBehaviour
             Rigidbody2D RB2D = joint.body.PulleyAttachedRigidBody;
             Rigidbody2D tailRB2D = jointTail.body.PulleyAttachedRigidBody;
 
-            float frictionFactorScalar = FrictionCompounded(cable, Groupindex, Groupindex + i - 1);
+            float frictionFactorScalar = FrictionCompounded(cable, Groupindex, i - 1);
 
             if (RB2D != null && !RB2D.isKinematic)
             {

@@ -376,30 +376,31 @@ public class CableEngine : MonoBehaviour
         foreach(CableRoot cable in cables)
         {
             CableRoot.Joint groupStart = null;
-            int groupStartIndex = -1;
+            int constraintIndex = -1;
             int groupCount = 0;
             for (int i = 1; i < cable.Joints.Count; i++)
             {
-                CableRoot.Joint constraintJoint = JointConstraintInitialization(in cable, i, ref groupStart, ref groupStartIndex, ref groupCount);
+                CableRoot.Joint constraintJoint = JointConstraintInitialization(in cable, i, ref groupStart, ref constraintIndex, ref groupCount);
                 if (constraintJoint != null)
-                    constraints.Add((constraintJoint, i, cable));
+                    constraints.Add((constraintJoint, constraintIndex, cable));
             }
         }
     }
 
     static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> constraints, uint iterations, float bias)
     {
+        print("Frame:" + Framecount);
         for (int i = 0; i < iterations; i++)
         {
             foreach ((CableRoot.Joint joint, int index, CableRoot cable) in constraints)
             {
                 if (joint.slipping)
                 {
-                    CableRoot.SlipGroupConstrainSolve(joint, index, cable, bias);
+                    CableRoot.SlipGroupConstraintSolve(joint, index, cable, bias);
                 }
                 else
                 {
-                    CableRoot.SegmentConstrainSolve(joint, cable.Joints[index - 1], bias);
+                    CableRoot.SegmentConstraintSolve(joint, cable.Joints[index - 1], bias);
                 }
                 // pinch solving
             }
