@@ -650,7 +650,7 @@ public class CableRoot : MonoBehaviour
                          (tailRB2D != null ? tailRB2D.GetPointVelocity(segmentTail.tangentPointHead) : Vector2.zero);
 
         float velConstraintValue = Vector2.Dot(relVel, segment.cableUnitVector);
-        print("stick " + velConstraintValue);
+
         float velocitySteering = bias * segment.positionError / Time.fixedDeltaTime;
 
         //impulse intensity:  
@@ -705,7 +705,7 @@ public class CableRoot : MonoBehaviour
                     (tailRB2D.angularVelocity * Mathf.Deg2Rad) * Vector3.Cross(jointTail.tangentOffsetHead, joint.cableUnitVector).z;
             }
         }
-        print("slip " + velocityError + " " + group.positionError);
+
         float velocitySteering = bias * group.positionError / Time.fixedDeltaTime;
 
         //impulse intensity:  

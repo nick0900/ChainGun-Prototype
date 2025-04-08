@@ -389,7 +389,6 @@ public class CableEngine : MonoBehaviour
 
     static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> constraints, uint iterations, float bias)
     {
-        print("Frame:" + Framecount);
         for (int i = 0; i < iterations; i++)
         {
             foreach ((CableRoot.Joint joint, int index, CableRoot cable) in constraints)

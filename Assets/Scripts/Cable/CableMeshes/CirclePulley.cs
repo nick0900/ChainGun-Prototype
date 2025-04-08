@@ -184,8 +184,17 @@ public class CirclePulley : CableMeshInterface
             {
                 Vector2 tangentIntersection = (P2 * (r1 + cableHalfWidth) - P1 * (r2 + cableHalfWidth)) / (r1 - r2);
 
-                this.TangentPointCircle(tangentIntersection, P1, r1, orientation1, out tangentOffset1, out angle1, cableHalfWidth);
-                pulley2.TangentPointCircle(tangentIntersection, P2, r2, orientation2, out tangentOffset2, out angle2, cableHalfWidth);
+                if (r1 > r2)
+                {
+                    this.TangentPointCircle(tangentIntersection, P1, r1, orientation1, out tangentOffset1, out angle1, cableHalfWidth);
+                    pulley2.TangentPointCircle(tangentIntersection, P2, r2, orientation2, out tangentOffset2, out angle2, cableHalfWidth);
+                }
+                else
+                {
+                    this.TangentPointCircle(tangentIntersection, P1, r1, !orientation1, out tangentOffset1, out angle1, cableHalfWidth);
+                    pulley2.TangentPointCircle(tangentIntersection, P2, r2, !orientation2, out tangentOffset2, out angle2, cableHalfWidth);
+                }
+                    
             }
         }
         else
