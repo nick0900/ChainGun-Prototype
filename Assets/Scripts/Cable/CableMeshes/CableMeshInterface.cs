@@ -145,6 +145,7 @@ abstract public class CableMeshInterface : CableMeshGeneration
         public bool hasContact;
 
         public float depth;
+        public float distance;
         public Vector2 normal;
 
         public CableMeshInterface bodyA;
@@ -309,6 +310,7 @@ abstract public class CableMeshInterface : CableMeshGeneration
         }
         result.hasContact = true;
         result.depth = minDistance + margin;
+        result.distance = -minDistance;
         result.normal = minNormal;
         result.bodyA = s1;
         result.bodyB = s2;
@@ -492,6 +494,7 @@ abstract public class CableMeshInterface : CableMeshGeneration
         result.bodyB = s2;
         
         result.depth = d;
+        result.distance = -d + margin;
         result.normal = distanceVector / distance;
 
         result.contactCount = 1;

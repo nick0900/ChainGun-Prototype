@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Analytics;
 using UnityEngine.UI;
@@ -23,6 +24,12 @@ public class CableRoot : MonoBehaviour
             IdGenerator++;
             return IdGenerator; 
         } 
+    }
+
+    [System.Serializable]
+    public class PinchJoint
+    {
+        public CableMeshInterface body = null;
     }
 
     [System.Serializable]
@@ -62,6 +69,8 @@ public class CableRoot : MonoBehaviour
         [HideInInspector] public int slipJointsCount = 0;
         [HideInInspector] public float SlipA = 0.0f;
         [HideInInspector] public float SlipB = 0.0f;
+
+        public List<PinchJoint> pinchJoints = new List<PinchJoint>();
     }
 
     public float CableHalfWidth = 0.05f;
@@ -746,5 +755,76 @@ public class CableRoot : MonoBehaviour
                 }
             }
         }
+    }
+
+    static public bool EvaluatePinchContact(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA)
+    {
+        if (manifold.distance >= cable.CableHalfWidth * 2) return false;
+
+        if (joint.storedLength >= joint.body.LoopLength(cable.CableHalfWidth)) return true;
+
+        float epsilon = 0.000001f;
+        Vector2 p = new Vector2(manifold.normal.y, -manifold.normal.x) * (useA ? -1.0f : 1.0f);
+        float tp = Vector2.Dot(p, joint.tangentOffsetTail);
+        float hp = Vector2.Dot(p, joint.tangentOffsetHead);
+        if (joint.orientation)
+        {
+            if (tp > -epsilon)
+            {
+                if (hp < epsilon)
+                    return true;
+                else
+                {
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    if (tn - hn > 0.0f) return true;
+                }
+            }
+
+            if (tp < epsilon)
+            {
+                if (hp > epsilon)
+                    return false;
+                else
+                {
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    if (hn - tn > 0.0f) return true;
+                }
+            }
+        }
+        else
+        {
+            if (tp < epsilon)
+            {
+                if (hp > -epsilon)
+                    return true;
+                else
+                {
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    if (tn - hn > 0.0f) return true;
+                }
+            }
+
+            if (tp > -epsilon)
+            {
+                if (hp < -epsilon)
+                    return false;
+                else
+                {
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    if (hn - tn > 0.0f) return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    static public void ConfigurePinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA)
+    {
+
     }
 }

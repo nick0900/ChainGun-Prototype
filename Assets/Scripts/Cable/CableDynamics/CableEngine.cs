@@ -234,7 +234,27 @@ public class CableEngine : MonoBehaviour
 
     static void ConfirmPinchContacts(ref List<PotentialPinchManifold> manifolds)
     {
-
+        List<PotentialPinchManifold> confirmed = new List<PotentialPinchManifold>();
+        foreach (PotentialPinchManifold manifold in manifolds)
+        {
+            float maxWidth = 0.0f;
+            foreach ((CableRoot.Joint joint, CableRoot root) in manifold.attach1.joints)
+            {
+                if (CableRoot.EvaluatePinchContact(joint, root, in manifold.manifold, false))
+                {
+                    CableRoot.ConfigurePinchJoint(joint, root, in manifold.manifold, false);
+                    maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
+                }
+            }
+            if (maxWidth > 0.0f)
+            {
+                PotentialPinchManifold temp = manifold;
+                temp.manifold.depth = maxWidth - temp.manifold.distance;
+                print(temp.manifold.depth);
+                confirmed.Add(temp);
+            }
+        }
+        manifolds = confirmed;
     }
 
     static void SegmentsIntersections(in List<CableMeshInterface> bodies, in List<CableRoot> cables, ref List<SegmentHit> hits)
