@@ -204,7 +204,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   protectSettings: 0
   submesh: 0
-  infiniteFriction: 0
+  infiniteFriction: 1
   constantFriction: 0
   staticFrictionCoeff: 0
   kineticFrictionCoeff: 0
@@ -232,13 +232,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 31488571}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 47.121, y: 3.86, z: 0}
+  m_LocalPosition: {x: 47.18, y: 2.785, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2008928361}
   m_Father: {fileID: 0}
-  m_RootOrder: 25
+  m_RootOrder: 24
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &31488579
 MonoBehaviour:
@@ -682,7 +682,7 @@ Transform:
   m_Children:
   - {fileID: 312257910}
   m_Father: {fileID: 0}
-  m_RootOrder: 18
+  m_RootOrder: 17
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &302497704
 GameObject:
@@ -2019,7 +2019,7 @@ Transform:
   m_Children:
   - {fileID: 349833864}
   m_Father: {fileID: 0}
-  m_RootOrder: 21
+  m_RootOrder: 20
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!233 &612329545
 HingeJoint2D:
@@ -3082,7 +3082,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 22
+  m_RootOrder: 21
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1035380292
 GameObject:
@@ -4122,7 +4122,7 @@ CircleCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
-  m_Radius: 0.32767
+  m_Radius: 0.163835
 --- !u!114 &1286890989
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4152,7 +4152,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   protectSettings: 0
   submesh: 0
-  infiniteFriction: 0
+  infiniteFriction: 1
   constantFriction: 0
   staticFrictionCoeff: 0
   kineticFrictionCoeff: 0
@@ -4180,13 +4180,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286890986}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 47.18, y: 2.05, z: 0}
+  m_LocalPosition: {x: 46.67, y: 2.85, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1430185960}
   m_Father: {fileID: 0}
-  m_RootOrder: 24
+  m_RootOrder: 23
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1286890994
 MonoBehaviour:
@@ -4668,7 +4668,7 @@ Transform:
   m_GameObject: {fileID: 1430185959}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 1953615691}
@@ -4958,7 +4958,6 @@ GameObject:
   - component: {fileID: 1525189711}
   - component: {fileID: 1525189709}
   - component: {fileID: 1525189708}
-  - component: {fileID: 1525189712}
   m_Layer: 13
   m_Name: Cable end
   m_TagString: Untagged
@@ -5020,7 +5019,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1525189707}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 47.64, y: 3.38, z: 0}
+  m_LocalPosition: {x: 49.09, y: 3.38, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5028,27 +5027,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 26
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!50 &1525189712
-Rigidbody2D:
-  serializedVersion: 4
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1525189707}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDrag: 0
-  m_AngularDrag: 0.05
-  m_GravityScale: 1
-  m_Material: {fileID: 0}
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 6
 --- !u!1 &1610840838
 GameObject:
   m_ObjectHideFlags: 0
@@ -5063,7 +5041,6 @@ GameObject:
   - component: {fileID: 1610840843}
   - component: {fileID: 1610840844}
   - component: {fileID: 1610840845}
-  - component: {fileID: 1610840846}
   m_Layer: 13
   m_Name: Cable Root
   m_TagString: Untagged
@@ -5139,6 +5116,58 @@ MonoBehaviour:
     SlipA: 0
     SlipB: 0
   - id: 0
+    linkType: 0
+    body: {fileID: 31488575}
+    tIdentityTail: 0
+    tIdentityHead: 0
+    tIdentityTailPrev: 0
+    tIdentityHeadPrev: 0
+    tangentOffsetHead: {x: 0, y: 0}
+    tangentOffsetTail: {x: 0, y: 0}
+    tangentPointHead: {x: 0, y: 0}
+    tangentPointTail: {x: 0, y: 0}
+    totalLambda: 0
+    inverseEffectiveMassDenominator: 0
+    storedLength: 0
+    restLength: 0
+    currentLength: 0
+    positionError: 0
+    segmentTension: 0
+    cableUnitVector: {x: 0, y: 0}
+    orientation: 1
+    startingLoops: 0
+    slipping: 0
+    frictionFactor: 0
+    slipJointsCount: 0
+    SlipA: 0
+    SlipB: 0
+  - id: 0
+    linkType: 0
+    body: {fileID: 2015910257}
+    tIdentityTail: 0
+    tIdentityHead: 0
+    tIdentityTailPrev: 0
+    tIdentityHeadPrev: 0
+    tangentOffsetHead: {x: 0, y: 0}
+    tangentOffsetTail: {x: 0, y: 0}
+    tangentPointHead: {x: 0, y: 0}
+    tangentPointTail: {x: 0, y: 0}
+    totalLambda: 0
+    inverseEffectiveMassDenominator: 0
+    storedLength: 0
+    restLength: 0
+    currentLength: 0
+    positionError: 0
+    segmentTension: 0
+    cableUnitVector: {x: 0, y: 0}
+    orientation: 1
+    startingLoops: 1
+    slipping: 0
+    frictionFactor: 0
+    slipJointsCount: 0
+    SlipA: 0
+    SlipB: 0
+  - id: 0
     linkType: 1
     body: {fileID: 1525189708}
     tIdentityTail: 0
@@ -5198,13 +5227,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1610840838}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 46.6, y: 3.31, z: 0}
+  m_LocalPosition: {x: 45.32, y: 3.31, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1350392632}
   m_Father: {fileID: 0}
-  m_RootOrder: 23
+  m_RootOrder: 22
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1610840843
 MonoBehaviour:
@@ -5251,27 +5280,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cableRoot: {fileID: 0}
---- !u!50 &1610840846
-Rigidbody2D:
-  serializedVersion: 4
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1610840838}
-  m_BodyType: 0
-  m_Simulated: 1
-  m_UseFullKinematicContacts: 0
-  m_UseAutoMass: 0
-  m_Mass: 1
-  m_LinearDrag: 0
-  m_AngularDrag: 0.05
-  m_GravityScale: 1
-  m_Material: {fileID: 0}
-  m_Interpolate: 0
-  m_SleepingMode: 1
-  m_CollisionDetection: 0
-  m_Constraints: 6
 --- !u!1 &1672469943
 GameObject:
   m_ObjectHideFlags: 0
@@ -5945,7 +5953,7 @@ Transform:
   m_Children:
   - {fileID: 524966671}
   m_Father: {fileID: 0}
-  m_RootOrder: 19
+  m_RootOrder: 18
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1837306643
 GameObject:
@@ -6971,7 +6979,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   protectSettings: 0
   submesh: 0
-  infiniteFriction: 0
+  infiniteFriction: 1
   constantFriction: 0
   staticFrictionCoeff: 0.6
   kineticFrictionCoeff: 0.4
@@ -6999,13 +7007,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2015910253}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 47.7, y: 5.24, z: 0}
+  m_LocalPosition: {x: 47.77, y: 2.86, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1866560873}
   m_Father: {fileID: 0}
-  m_RootOrder: 17
+  m_RootOrder: 25
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!50 &2015910260
 Rigidbody2D:
@@ -7027,7 +7035,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 7
+  m_Constraints: 0
 --- !u!1 &2026122659
 GameObject:
   m_ObjectHideFlags: 0
@@ -7243,7 +7251,7 @@ Transform:
   m_Children:
   - {fileID: 848787610}
   m_Father: {fileID: 0}
-  m_RootOrder: 20
+  m_RootOrder: 19
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2112283243
 MonoBehaviour:
