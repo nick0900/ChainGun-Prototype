@@ -240,9 +240,10 @@ public class CableEngine : MonoBehaviour
             float maxWidth = 0.0f;
             foreach ((CableRoot.Joint joint, CableRoot root) in manifold.attach1.joints)
             {
-                if (CableRoot.EvaluatePinchContact(joint, root, in manifold.manifold, false))
+                bool transitionJoint;
+                if (CableRoot.EvaluatePinchContact(joint, root, in manifold.manifold, false, out transitionJoint))
                 {
-                    CableRoot.ConfigurePinchJoint(joint, root, in manifold.manifold, false);
+                    CableRoot.ConfigurePinchJoint(joint, root, in manifold.manifold, false, transitionJoint);
                     maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                 }
             }

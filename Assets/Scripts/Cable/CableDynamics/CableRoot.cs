@@ -757,8 +757,9 @@ public class CableRoot : MonoBehaviour
         }
     }
 
-    static public bool EvaluatePinchContact(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA)
+    static public bool EvaluatePinchContact(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA, out bool transitionJoint)
     {
+        transitionJoint = false;
         if (manifold.distance >= cable.CableHalfWidth * 2) return false;
 
         if (joint.storedLength >= joint.body.LoopLength(cable.CableHalfWidth)) return true;
@@ -766,7 +767,9 @@ public class CableRoot : MonoBehaviour
         float epsilon = 0.000001f;
         Vector2 p = new Vector2(manifold.normal.y, -manifold.normal.x) * (useA ? -1.0f : 1.0f);
         float tp = Vector2.Dot(p, joint.tangentOffsetTail);
+        if (Mathf.Abs(tp) < epsilon) transitionJoint = true;
         float hp = Vector2.Dot(p, joint.tangentOffsetHead);
+        if (Mathf.Abs(hp) < epsilon) transitionJoint = true;
         if (joint.orientation)
         {
             if (tp > -epsilon)
@@ -780,8 +783,7 @@ public class CableRoot : MonoBehaviour
                     if (tn - hn > 0.0f) return true;
                 }
             }
-
-            if (tp < epsilon)
+            else if (tp < epsilon)
             {
                 if (hp > epsilon)
                     return false;
@@ -806,8 +808,7 @@ public class CableRoot : MonoBehaviour
                     if (tn - hn > 0.0f) return true;
                 }
             }
-
-            if (tp > -epsilon)
+            else if (tp > -epsilon)
             {
                 if (hp < -epsilon)
                     return false;
@@ -823,8 +824,8 @@ public class CableRoot : MonoBehaviour
         return false;
     }
 
-    static public void ConfigurePinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA)
+    static public void ConfigurePinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA, bool transitionJoint)
     {
-
+        if (transitionJoint) print("Transition!");
     }
 }
