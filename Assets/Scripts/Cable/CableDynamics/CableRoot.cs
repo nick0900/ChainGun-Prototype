@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Burst.CompilerServices;
 using UnityEditor.Experimental.GraphView;
 using UnityEngine;
 using UnityEngine.Analytics;
@@ -757,7 +758,7 @@ public class CableRoot : MonoBehaviour
         }
     }
 
-    static public bool EvaluatePinchContact(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA, out bool transitionJoint)
+    static public bool EvaluatePinchContact(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, out bool transitionJoint)
     {
         transitionJoint = false;
         if (manifold.distance >= cable.CableHalfWidth * 2) return false;
@@ -765,7 +766,7 @@ public class CableRoot : MonoBehaviour
         if (joint.storedLength >= joint.body.LoopLength(cable.CableHalfWidth)) return true;
 
         float epsilon = 0.000001f;
-        Vector2 p = new Vector2(manifold.normal.y, -manifold.normal.x) * (useA ? -1.0f : 1.0f);
+        Vector2 p = new Vector2(manifold.normal.y, -manifold.normal.x);
         float tp = Vector2.Dot(p, joint.tangentOffsetTail);
         if (Mathf.Abs(tp) < epsilon) transitionJoint = true;
         float hp = Vector2.Dot(p, joint.tangentOffsetHead);
@@ -824,8 +825,79 @@ public class CableRoot : MonoBehaviour
         return false;
     }
 
-    static public void ConfigurePinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool useA, bool transitionJoint)
+    static public void ConfigurePinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool transitionJoint)
     {
-        if (transitionJoint) print("Transition!");
+        if (transitionJoint)
+        {
+            // adjust joint tangents and constraint
+            ConfigureTransitionPinchJoint(joint, cable, in manifold);
+            return;
+        }
+
+        //configure pinch joint and constraint
+    }
+
+    static void ConfigureTransitionPinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold)
+    {
+        int index = cable.Joints.FindIndex(x => x.id == joint.id);
+        Vector2 segmentUnitVector = new Vector2(manifold.normal.y, -manifold.normal.x) * (joint.orientation ? -1.0f : 1.0f);
+
+        Vector2 newTPointA;
+        Vector2 newTPointB;
+
+        if (manifold.contactCount == 2)
+        {
+            if (joint.orientation)
+            {
+                newTPointA = manifold.contact1.A;
+                newTPointB = manifold.contact2.B;
+            }
+            else
+            {
+                newTPointA = manifold.contact2.A;
+                newTPointB = manifold.contact1.B;
+            }
+        }
+        else
+        {
+            newTPointA = manifold.contact1.A;
+            newTPointB = manifold.contact1.B;
+        }
+
+        if ((index > 0) && (cable.Joints[index - 1].orientation != joint.orientation) && (cable.Joints[index - 1].body == manifold.bodyB))
+        {
+            Joint jointTail = cable.Joints[index - 1];
+
+            joint.cableUnitVector = segmentUnitVector;
+            joint.positionError -= joint.currentLength;
+            joint.currentLength = 0.0f;
+            joint.segmentTension = TensionEstimation(joint);
+
+            joint.tangentPointTail = newTPointA;
+            joint.tangentOffsetTail = newTPointA - joint.body.CenterOfMass;
+
+            jointTail.tangentPointHead = newTPointB;
+            jointTail.tangentOffsetHead = newTPointB - jointTail.body.CenterOfMass;
+
+        }
+        else if ((index < cable.Joints.Count - 1) && (cable.Joints[index + 1].orientation != joint.orientation) && (cable.Joints[index + 1].body == manifold.bodyB))
+        {
+            Joint jointHead = cable.Joints[index + 1];
+
+            jointHead.cableUnitVector = segmentUnitVector;
+            jointHead.positionError -= jointHead.currentLength;
+            jointHead.currentLength = 0.0f;
+            jointHead.segmentTension = TensionEstimation(jointHead);
+
+            jointHead.tangentPointTail = newTPointA;
+            jointHead.tangentOffsetTail = newTPointA - jointHead.body.CenterOfMass;
+
+            joint.tangentPointHead = newTPointB;
+            joint.tangentOffsetHead = newTPointB - joint.body.CenterOfMass;
+        }
+        else
+        {
+            print("is not possible");
+        }
     }
 }

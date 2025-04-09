@@ -94,7 +94,8 @@ public class CableEngine : MonoBehaviour
         public BodyAttachmentManifold attach2;
         public CablePinchManifold manifold;
     }
-    private List<PotentialPinchManifold> Manifolds;
+    private List<PotentialPinchManifold> PotentialManifolds;
+    private List<CablePinchManifold> PinchConstraints;
 
     struct SegmentHit
     {
@@ -111,7 +112,8 @@ public class CableEngine : MonoBehaviour
     void Start()
     {
         NearContacts = new List<NearContact>();
-        Manifolds = new List<PotentialPinchManifold>();
+        PotentialManifolds = new List<PotentialPinchManifold>();
+        PinchConstraints = new List<CablePinchManifold>();
         SegmentHits = new List<SegmentHit>();
         SegmentConstraints = new List<(CableRoot.Joint joint, int index, CableRoot cable)>();
     }
@@ -123,11 +125,12 @@ public class CableEngine : MonoBehaviour
         UpdateCables(in Cables);
 
         NearContacts.Clear();
-        Manifolds.Clear();
+        PotentialManifolds.Clear();
+        PinchConstraints.Clear();
 
         PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
-        PinchNarrowPhase(in NearContacts, ref Manifolds);
-        ConfirmPinchContacts(ref Manifolds);
+        PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
+        ConfirmPinchContacts(in PotentialManifolds, ref PinchConstraints);
 
         RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
 
@@ -140,7 +143,7 @@ public class CableEngine : MonoBehaviour
         SegmentConstraints.Clear();
         InitializeSegmentConstraints(in Cables, ref SegmentConstraints);
 
-        Solver(in SegmentConstraints, SolverIterations, SolverBias);
+        Solver(in SegmentConstraints, in PinchConstraints, SolverIterations, SolverBias);
     }
 
     static void UpdateCables(in List<CableRoot> cables)
@@ -232,30 +235,50 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void ConfirmPinchContacts(ref List<PotentialPinchManifold> manifolds)
+    static void ConfirmPinchContacts(in List<PotentialPinchManifold> manifolds, ref List<CablePinchManifold> confirmedConstraints)
     {
-        List<PotentialPinchManifold> confirmed = new List<PotentialPinchManifold>();
         foreach (PotentialPinchManifold manifold in manifolds)
         {
             float maxWidth = 0.0f;
-            foreach ((CableRoot.Joint joint, CableRoot root) in manifold.attach1.joints)
-            {
-                bool transitionJoint;
-                if (CableRoot.EvaluatePinchContact(joint, root, in manifold.manifold, false, out transitionJoint))
+            if (manifold.attach1.joints != null)
+                foreach ((CableRoot.Joint joint, CableRoot root) in manifold.attach1.joints)
                 {
-                    CableRoot.ConfigurePinchJoint(joint, root, in manifold.manifold, false, transitionJoint);
-                    maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
+                    bool transitionJoint;
+                    if (CableRoot.EvaluatePinchContact(joint, root, in manifold.manifold, out transitionJoint))
+                    {
+                        CableRoot.ConfigurePinchJoint(joint, root, in manifold.manifold, transitionJoint);
+                        maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
+                    }
                 }
-            }
+            if (manifold.attach2.joints != null)
+                foreach ((CableRoot.Joint joint, CableRoot root) in manifold.attach2.joints)
+                {
+                    bool transitionJoint;
+                    CablePinchManifold reverseManifold = manifold.manifold;
+                    reverseManifold.normal *= -1.0f;
+                    reverseManifold.bodyA = reverseManifold.bodyB;
+                    reverseManifold.bodyB = manifold.manifold.bodyA;
+                    reverseManifold.contact1.A = reverseManifold.contact1.B;
+                    reverseManifold.contact1.B = manifold.manifold.contact1.A;
+                    if (reverseManifold.contactCount == 2)
+                    {
+                        reverseManifold.contact2.A = reverseManifold.contact2.B;
+                        reverseManifold.contact2.B = manifold.manifold.contact2.A;
+                    }
+
+                    if (CableRoot.EvaluatePinchContact(joint, root, in reverseManifold, out transitionJoint))
+                    {
+                        CableRoot.ConfigurePinchJoint(joint, root, in reverseManifold, transitionJoint);
+                        maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
+                    }
+                }
             if (maxWidth > 0.0f)
             {
-                PotentialPinchManifold temp = manifold;
-                temp.manifold.depth = maxWidth - temp.manifold.distance;
-                print(temp.manifold.depth);
-                confirmed.Add(temp);
+                CablePinchManifold temp = manifold.manifold;
+                temp.depth = maxWidth - temp.distance;
+                confirmedConstraints.Add(temp);
             }
         }
-        manifolds = confirmed;
     }
 
     static void SegmentsIntersections(in List<CableMeshInterface> bodies, in List<CableRoot> cables, ref List<SegmentHit> hits)
@@ -408,11 +431,11 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> constraints, uint iterations, float bias)
+    static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> segmentConstraints, in List<CablePinchManifold> pinchConstraints, uint iterations, float bias)
     {
         for (int i = 0; i < iterations; i++)
         {
-            foreach ((CableRoot.Joint joint, int index, CableRoot cable) in constraints)
+            foreach ((CableRoot.Joint joint, int index, CableRoot cable) in segmentConstraints)
             {
                 if (joint.slipping)
                 {
@@ -422,30 +445,30 @@ public class CableEngine : MonoBehaviour
                 {
                     CableRoot.SegmentConstraintSolve(joint, cable.Joints[index - 1], bias);
                 }
-                // pinch solving
             }
+            
         }
     }
 
     private void OnDrawGizmos()
     {
         if (Application.isPlaying)
-            foreach (PotentialPinchManifold manifold in Manifolds)
+            foreach (CablePinchManifold manifold in PinchConstraints)
             {
-                if (manifold.manifold.contactCount > 0)
+                if (manifold.contactCount > 0)
                 {
                     Gizmos.color = Color.red;
-                    Gizmos.DrawSphere(manifold.manifold.contact1.A, 0.05f);
+                    Gizmos.DrawSphere(manifold.contact1.A, 0.05f);
                     Gizmos.color = Color.yellow;
-                    Gizmos.DrawSphere(manifold.manifold.contact1.B, 0.05f);
+                    Gizmos.DrawSphere(manifold.contact1.B, 0.05f);
                 }
 
-                if (manifold.manifold.contactCount == 2)
+                if (manifold.contactCount == 2)
                 {
                     Gizmos.color = Color.red;
-                    Gizmos.DrawSphere(manifold.manifold.contact2.A, 0.05f);
+                    Gizmos.DrawSphere(manifold.contact2.A, 0.05f);
                     Gizmos.color = Color.yellow;
-                    Gizmos.DrawSphere(manifold.manifold.contact2.B, 0.05f);
+                    Gizmos.DrawSphere(manifold.contact2.B, 0.05f);
                 }
 
             }
