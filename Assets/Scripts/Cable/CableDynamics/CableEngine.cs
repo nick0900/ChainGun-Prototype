@@ -9,7 +9,8 @@ using static CableRoot;
 public class CableEngine : MonoBehaviour
 {
     public uint SolverIterations = 10;
-    public float SolverBias = 0.2f;
+    public float SegmentsBias = 0.2f;
+    public float ContactsBias = 0.7f;
 
     public List<CableMeshInterface> Bodies;
     public List<CableRoot> Cables;
@@ -144,7 +145,7 @@ public class CableEngine : MonoBehaviour
         SegmentConstraints.Clear();
         InitializeSegmentConstraints(in Cables, ref SegmentConstraints);
 
-        Solver(in SegmentConstraints, in PinchConstraints, SolverIterations, SolverBias);
+        Solver(in SegmentConstraints, ref PinchConstraints, SolverIterations, SegmentsBias, ContactsBias);
     }
 
     static void UpdateCables(in List<CableRoot> cables)
@@ -442,7 +443,7 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> segmentConstraints, in List<CablePinchManifold> pinchConstraints, uint iterations, float bias)
+    static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> segmentConstraints, ref List<CablePinchManifold> pinchConstraints, uint iterations, float segmentBias, float contactBias)
     {
         for (int i = 0; i < iterations; i++)
         {
@@ -450,18 +451,18 @@ public class CableEngine : MonoBehaviour
             {
                 if (joint.slipping)
                 {
-                    CableRoot.SlipGroupConstraintSolve(joint, index, cable, bias);
+                    CableRoot.SlipGroupConstraintSolve(joint, index, cable, segmentBias);
                 }
                 else
                 {
-                    CableRoot.SegmentConstraintSolve(joint, cable.Joints[index - 1], bias);
+                    CableRoot.SegmentConstraintSolve(joint, cable.Joints[index - 1], segmentBias);
                 }
             }
 
             for (int j = 0; j < pinchConstraints.Count; j++)
             {
                 CablePinchManifold contactManifold = pinchConstraints[j];
-                CableMeshInterface.ContactConstraintSolve(ref contactManifold, bias);
+                CableMeshInterface.ContactConstraintSolve(ref contactManifold, contactBias);
                 pinchConstraints[j] = contactManifold;
             }
         }

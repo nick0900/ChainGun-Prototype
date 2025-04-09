@@ -487,7 +487,7 @@ public class CableRoot : MonoBehaviour
             }
         }
         // comment out for warm starting
-        joint.totalLambda = 0;
+        //joint.totalLambda = 0;
         return constraint;
     }
 
@@ -873,10 +873,10 @@ public class CableRoot : MonoBehaviour
             joint.currentLength = 0.0f;
             joint.segmentTension = TensionEstimation(joint);
 
-            joint.tangentPointTail = newTPointA;
+            joint.tangentPointTail = newTPointA - manifold.normal * cable.CableHalfWidth;
             joint.tangentOffsetTail = newTPointA - joint.body.CenterOfMass;
 
-            jointTail.tangentPointHead = newTPointB;
+            jointTail.tangentPointHead = newTPointB + manifold.normal * cable.CableHalfWidth;
             jointTail.tangentOffsetHead = newTPointB - jointTail.body.CenterOfMass;
 
         }
@@ -889,11 +889,11 @@ public class CableRoot : MonoBehaviour
             jointHead.currentLength = 0.0f;
             jointHead.segmentTension = TensionEstimation(jointHead);
 
-            jointHead.tangentPointTail = newTPointA;
-            jointHead.tangentOffsetTail = newTPointA - jointHead.body.CenterOfMass;
+            jointHead.tangentPointTail = newTPointB + manifold.normal * cable.CableHalfWidth;
+            jointHead.tangentOffsetTail = newTPointB - jointHead.body.CenterOfMass;
 
-            joint.tangentPointHead = newTPointB;
-            joint.tangentOffsetHead = newTPointB - joint.body.CenterOfMass;
+            joint.tangentPointHead = newTPointA - manifold.normal * cable.CableHalfWidth;
+            joint.tangentOffsetHead = newTPointA - joint.body.CenterOfMass;
         }
         else
         {

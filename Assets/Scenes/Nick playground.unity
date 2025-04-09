@@ -136,7 +136,6 @@ GameObject:
   - component: {fileID: 31488574}
   - component: {fileID: 31488573}
   - component: {fileID: 31488572}
-  - component: {fileID: 31488579}
   - component: {fileID: 31488580}
   m_Layer: 0
   m_Name: circlepulley cable start (1)
@@ -232,7 +231,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 31488571}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 47.78, y: 2.85, z: 0}
+  m_LocalPosition: {x: 47.763, y: 2.85, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -240,19 +239,6 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 24
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &31488579
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 31488571}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9d8cb780e7b4e4746a219deeebd0cdad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rotVel: 200.44
 --- !u!50 &31488580
 Rigidbody2D:
   serializedVersion: 4
@@ -3300,7 +3286,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   SolverIterations: 10
-  SolverBias: 0.2
+  SegmentsBias: 0.2
+  ContactsBias: 0.7
   Bodies:
   - {fileID: 1610840843}
   - {fileID: 1286890990}
@@ -4426,7 +4413,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286890986}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 49.150997, y: 3.654, z: 0}
+  m_LocalPosition: {x: 46.946, y: 2.827, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4446,7 +4433,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d8cb780e7b4e4746a219deeebd0cdad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rotVel: -209.5
+  rotVel: 209.5
 --- !u!50 &1286890995
 Rigidbody2D:
   serializedVersion: 4
@@ -4456,7 +4443,7 @@ Rigidbody2D:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1286890986}
   m_BodyType: 0
-  m_Simulated: 0
+  m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
@@ -5408,6 +5395,7 @@ GameObject:
   - component: {fileID: 1525189711}
   - component: {fileID: 1525189709}
   - component: {fileID: 1525189708}
+  - component: {fileID: 1525189712}
   m_Layer: 13
   m_Name: Cable end
   m_TagString: Untagged
@@ -5469,7 +5457,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1525189707}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 49.558, y: 3.918, z: 0}
+  m_LocalPosition: {x: 48.529, y: 2.161, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5477,6 +5465,27 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 25
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!50 &1525189712
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525189707}
+  m_BodyType: 0
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0.05
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 7
 --- !u!1 &1610840838
 GameObject:
   m_ObjectHideFlags: 0
@@ -5515,7 +5524,7 @@ MonoBehaviour:
   Joints:
   - id: 0
     linkType: 1
-    body: {fileID: 1525189708}
+    body: {fileID: 1610840843}
     tIdentityTail: 0
     tIdentityHead: 0
     tIdentityTailPrev: 0
@@ -5559,7 +5568,7 @@ MonoBehaviour:
     positionError: 0
     segmentTension: 0
     cableUnitVector: {x: 0, y: 0}
-    orientation: 0
+    orientation: 1
     startingLoops: 0
     slipping: 0
     frictionFactor: 0
@@ -5586,7 +5595,7 @@ MonoBehaviour:
     positionError: 0
     segmentTension: 0
     cableUnitVector: {x: 0, y: 0}
-    orientation: 1
+    orientation: 0
     startingLoops: 0
     slipping: 0
     frictionFactor: 0
@@ -5596,7 +5605,7 @@ MonoBehaviour:
     pinchJoints: []
   - id: 0
     linkType: 1
-    body: {fileID: 1610840843}
+    body: {fileID: 1525189708}
     tIdentityTail: 0
     tIdentityHead: 0
     tIdentityTailPrev: 0
@@ -5655,7 +5664,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1610840838}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 46, y: 2.3, z: 0}
+  m_LocalPosition: {x: 45.798, y: 3.002, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5702,7 +5711,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1610840838}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9660ef322977e0f428afca4cc34bf911, type: 3}
   m_Name: 
@@ -7435,7 +7444,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2015910253}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 46.44, y: 1.65, z: 0}
+  m_LocalPosition: {x: 43.557, y: 3.167, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
