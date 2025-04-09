@@ -131,6 +131,7 @@ public class CableEngine : MonoBehaviour
         PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
         PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
         ConfirmPinchContacts(in PotentialManifolds, ref PinchConstraints);
+        PinchInitializeContactConstraints(ref PinchConstraints);
 
         RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
 
@@ -232,6 +233,16 @@ public class CableEngine : MonoBehaviour
                 manifold.attach2 = near.b2;
                 manifolds.Add(manifold);
             }
+        }
+    }
+
+    static void PinchInitializeContactConstraints(ref List<CablePinchManifold> manifolds)
+    {
+        for (int i = 0; i < manifolds.Count; i++)
+        {
+            CablePinchManifold contactManifold = manifolds[i];
+            CableMeshInterface.InitializeContactConstraint(ref contactManifold);
+            manifolds[i] = contactManifold;
         }
     }
 
@@ -446,7 +457,13 @@ public class CableEngine : MonoBehaviour
                     CableRoot.SegmentConstraintSolve(joint, cable.Joints[index - 1], bias);
                 }
             }
-            
+
+            for (int j = 0; j < pinchConstraints.Count; j++)
+            {
+                CablePinchManifold contactManifold = pinchConstraints[j];
+                CableMeshInterface.ContactConstraintSolve(ref contactManifold, bias);
+                pinchConstraints[j] = contactManifold;
+            }
         }
     }
 

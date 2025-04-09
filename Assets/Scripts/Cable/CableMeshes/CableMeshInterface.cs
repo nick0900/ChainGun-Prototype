@@ -153,6 +153,11 @@ abstract public class CableMeshInterface : CableMeshGeneration
         public ContactPoint contact1;
         public ContactPoint contact2;
         public int contactCount;
+
+        public Vector2 COMOffsetA;
+        public Vector2 COMOffsetB;
+        public float inverseEffectiveMassDenominator;
+        public float totalLambda;
     }
 
     struct SupportPoint
@@ -520,6 +525,110 @@ abstract public class CableMeshInterface : CableMeshGeneration
         }
 
         return true;
+    }
+
+    static public void InitializeContactConstraint(ref CablePinchManifold manifold)
+    {
+        if (manifold.contactCount == 2)
+        {
+
+        }
+        else
+        {
+            manifold.COMOffsetA = manifold.contact1.A - manifold.bodyA.CenterOfMass;
+            manifold.COMOffsetB = manifold.contact1.B - manifold.bodyB.CenterOfMass;
+
+            float invMass1 = 0;
+            float invMass2 = 0;
+
+            float inertiaTerm1 = 0;
+            float inertiaTerm2 = 0;
+
+            Vector3 impulseRadius = Vector3.zero;
+            Rigidbody2D ARB2D = manifold.bodyA.PulleyAttachedRigidBody;
+            if (ARB2D != null && !ARB2D.isKinematic)
+            {
+                invMass1 = 1.0f / ARB2D.mass;
+
+
+                if (ARB2D.inertia != 0)
+                {
+                    impulseRadius = Vector3.Cross(manifold.COMOffsetA, manifold.normal);
+
+                    inertiaTerm1 = (impulseRadius.z * impulseRadius.z) / ARB2D.inertia;
+                }
+            }
+
+            Rigidbody2D BRB2D = manifold.bodyB.PulleyAttachedRigidBody;
+            if (BRB2D != null && !BRB2D.isKinematic)
+            {
+                invMass2 = 1.0f / BRB2D.mass;
+
+                if (BRB2D.inertia != 0)
+                {
+                    impulseRadius = Vector3.Cross(manifold.COMOffsetB, manifold.normal);
+
+                    inertiaTerm2 = (impulseRadius.z * impulseRadius.z) / BRB2D.inertia;
+                }
+            }
+
+            //the mass projected along the cable direction that the impulse lambda must work against
+            //larger masses result in a smaller denominator. a static object with infinite mass will give terms of zero
+            //if both objects are static no impulse needs to be calculated
+            manifold.inverseEffectiveMassDenominator = invMass1 + invMass2 + inertiaTerm1 + inertiaTerm2;
+            manifold.inverseEffectiveMassDenominator = 1 / manifold.inverseEffectiveMassDenominator;
+        }
+    }
+
+    static public void ContactConstraintSolve(ref CablePinchManifold manifold, float bias)
+    {
+        if (manifold.inverseEffectiveMassDenominator <= 0.0f) return;
+
+        Rigidbody2D ARB2D = manifold.bodyA.PulleyAttachedRigidBody;
+        Rigidbody2D BRB2D = manifold.bodyB.PulleyAttachedRigidBody;
+        if (manifold.contactCount == 2)
+        {
+
+        }
+        else
+        {
+            //project the relative velocity of the two bodies along the cable direction
+            Vector2 relVel = (ARB2D != null ? ARB2D.GetPointVelocity(manifold.contact1.A) : Vector2.zero) -
+                             (BRB2D != null ? BRB2D.GetPointVelocity(manifold.contact1.B) : Vector2.zero);
+
+            float velConstraintValue = Vector2.Dot(relVel, manifold.normal);
+
+            float velocitySteering = bias * manifold.depth / Time.fixedDeltaTime;
+
+            //impulse intensity:  
+            float lambda = -(velConstraintValue + velocitySteering) * manifold.inverseEffectiveMassDenominator;
+
+            //accumulate and clamp impulse
+            float tempLambda = manifold.totalLambda;
+            manifold.totalLambda = Mathf.Min(0, manifold.totalLambda + lambda);
+            lambda = manifold.totalLambda - tempLambda;
+
+            //apply impulse
+            if (ARB2D != null && !ARB2D.isKinematic)
+            {
+                ARB2D.velocity += lambda * manifold.normal / ARB2D.mass;
+
+                if (ARB2D.inertia != 0)
+                {
+                    ARB2D.angularVelocity += Mathf.Rad2Deg * lambda * Vector3.Cross(manifold.COMOffsetA, manifold.normal).z / ARB2D.inertia;
+                }
+            }
+
+            if (BRB2D != null && !BRB2D.isKinematic)
+            {
+                BRB2D.velocity -= lambda * manifold.normal / BRB2D.mass;
+
+                if (BRB2D.inertia != 0)
+                {
+                    BRB2D.angularVelocity -= Mathf.Rad2Deg * lambda * Vector3.Cross(manifold.COMOffsetB, manifold.normal).z / BRB2D.inertia;
+                }
+            }
+        }
     }
 
     static Vector2 CableSegmentFurthestPoint(CableRoot.Joint joint, CableRoot.Joint jointTail, Vector2 d)
