@@ -87,7 +87,7 @@ public class CableEngine : MonoBehaviour
         public BodyAttachmentManifold b2;
         public float margin;
     }
-    List<NearContact> NearContacts;
+    List<NearContact> NearContacts = new List<NearContact>();
 
     struct PotentialPinchManifold
     {
@@ -95,9 +95,21 @@ public class CableEngine : MonoBehaviour
         public BodyAttachmentManifold attach2;
         public CablePinchManifold manifold;
     }
-    private List<PotentialPinchManifold> PotentialManifolds;
-    private List<CablePinchManifold> PinchConstraints;
+    private List<PotentialPinchManifold> PotentialManifolds = new List<PotentialPinchManifold>();
 
+    [System.Serializable]
+    class PinchJointData
+    {
+        public uint lastUpdated = 0;
+        public CableRoot cable = null;
+        public CableRoot.Joint pinchJoint = null;
+        public CableRoot.Joint headJoint = null;
+        public CableRoot.Joint tailJoint = null;
+        public CablePinchManifold manifold;
+    }
+
+    [SerializeField] private Dictionary<(uint id1,uint id2), PinchJointData> PinchJoints = new Dictionary<(uint id1, uint id2), PinchJointData>();
+    private List<CablePinchManifold> ContactConstraints = new List<CablePinchManifold>();
     struct SegmentHit
     {
         public CableRoot cable;
@@ -105,19 +117,11 @@ public class CableEngine : MonoBehaviour
         public CableMeshInterface body;
     }
 
-    private List<SegmentHit> SegmentHits;
+    private List<SegmentHit> SegmentHits = new List<SegmentHit>();
 
-    private List<(CableRoot.Joint joint, int index, CableRoot cable)> SegmentConstraints;
+    private List<(CableRoot.Joint joint, int index, CableRoot cable)> SegmentConstraints = new List<(CableRoot.Joint joint, int index, CableRoot cable)>();
 
     public bool DebugRenderContacts = false;
-    void Start()
-    {
-        NearContacts = new List<NearContact>();
-        PotentialManifolds = new List<PotentialPinchManifold>();
-        PinchConstraints = new List<CablePinchManifold>();
-        SegmentHits = new List<SegmentHit>();
-        SegmentConstraints = new List<(CableRoot.Joint joint, int index, CableRoot cable)>();
-    }
 
     static uint Framecount = 0;
     void FixedUpdate()
@@ -127,12 +131,13 @@ public class CableEngine : MonoBehaviour
 
         NearContacts.Clear();
         PotentialManifolds.Clear();
-        PinchConstraints.Clear();
+        ContactConstraints.Clear();
 
         PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
         PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
-        ConfirmPinchContacts(in PotentialManifolds, ref PinchConstraints);
-        PinchInitializeContactConstraints(ref PinchConstraints);
+        ConfirmPinchContacts(in PotentialManifolds, ref PinchJoints, ref ContactConstraints, Framecount);
+
+        PinchInitializeContactConstraints(ref ContactConstraints);
 
         RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
 
@@ -145,30 +150,22 @@ public class CableEngine : MonoBehaviour
         SegmentConstraints.Clear();
         InitializeSegmentConstraints(in Cables, ref SegmentConstraints);
 
-        Solver(in SegmentConstraints, ref PinchConstraints, SolverIterations, SegmentsBias, ContactsBias);
+        Solver(in SegmentConstraints, ref ContactConstraints, SolverIterations, SegmentsBias, ContactsBias);
     }
 
     static void UpdateCables(in List<CableRoot> cables)
     {
         foreach (CableRoot cable in cables)
         {
-            CableRoot.Joint joint;
-            for (int i = 1; i < cable.Joints.Count - 1; i++)
+            for (int i = 1; i < cable.Joints.Count; i++)
             {
-                joint = cable.Joints[i];
-                CableRoot.Joint jointTail = cable.Joints[i - 1];
-                CableRoot.Joint jointHead = cable.Joints[i + 1];
-
-                CableRoot.UpdatePulley(ref joint, ref jointTail, ref jointHead, cable.CableHalfWidth);
-                CableRoot.InitializeSegment(ref joint, jointTail);
-
-                cable.Joints[i] = joint;
-                cable.Joints[i - 1] = jointTail;
-                cable.Joints[i + 1] = jointHead;
+                CableRoot.UpdateSegment(cable.Joints[i], cable.Joints[i - 1], cable.CableHalfWidth);
             }
-            joint = cable.Joints[cable.Joints.Count - 1];
-            CableRoot.InitializeSegment(ref joint, cable.Joints[cable.Joints.Count - 2]);
-            cable.Joints[cable.Joints.Count - 1] = joint;
+            
+            if (cable.Looping)
+            {
+                CableRoot.UpdateSegment(cable.Joints[0], cable.Joints[cable.Joints.Count - 1], cable.CableHalfWidth);
+            }
         }
     }
 
@@ -237,18 +234,9 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void PinchInitializeContactConstraints(ref List<CablePinchManifold> manifolds)
+    static void ConfirmPinchContacts(in List<PotentialPinchManifold> manifolds, ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints, ref List<CablePinchManifold> contactConstraints, uint currentFrame)
     {
-        for (int i = 0; i < manifolds.Count; i++)
-        {
-            CablePinchManifold contactManifold = manifolds[i];
-            CableMeshInterface.InitializeContactConstraint(ref contactManifold);
-            manifolds[i] = contactManifold;
-        }
-    }
-
-    static void ConfirmPinchContacts(in List<PotentialPinchManifold> manifolds, ref List<CablePinchManifold> confirmedConstraints)
-    {
+        /*
         foreach (PotentialPinchManifold manifold in manifolds)
         {
             float maxWidth = 0.0f;
@@ -290,6 +278,22 @@ public class CableEngine : MonoBehaviour
                 temp.depth = maxWidth - temp.distance;
                 confirmedConstraints.Add(temp);
             }
+        }
+        */
+    }
+
+    static void UpdatePinchJoints(ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints)
+    {
+
+    }
+
+    static void PinchInitializeContactConstraints(ref List<CablePinchManifold> manifolds)
+    {
+        for (int i = 0; i < manifolds.Count; i++)
+        {
+            CablePinchManifold contactManifold = manifolds[i];
+            CableMeshInterface.InitializeContactConstraint(ref contactManifold);
+            manifolds[i] = contactManifold;
         }
     }
 
@@ -471,7 +475,7 @@ public class CableEngine : MonoBehaviour
     private void OnDrawGizmos()
     {
         if (Application.isPlaying)
-            foreach (CablePinchManifold manifold in PinchConstraints)
+            foreach (CablePinchManifold manifold in ContactConstraints)
             {
                 if (manifold.contactCount > 0)
                 {

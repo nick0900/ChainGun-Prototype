@@ -578,6 +578,7 @@ abstract public class CableMeshInterface : CableMeshGeneration
             manifold.inverseEffectiveMassDenominator = invMass1 + invMass2 + inertiaTerm1 + inertiaTerm2;
             manifold.inverseEffectiveMassDenominator = 1 / manifold.inverseEffectiveMassDenominator;
         }
+        manifold.totalLambda = 0;
     }
 
     static public void ContactConstraintSolve(ref CablePinchManifold manifold, float bias)

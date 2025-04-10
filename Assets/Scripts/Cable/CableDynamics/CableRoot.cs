@@ -28,12 +28,6 @@ public class CableRoot : MonoBehaviour
     }
 
     [System.Serializable]
-    public class PinchJoint
-    {
-        public CableMeshInterface body = null;
-    }
-
-    [System.Serializable]
     public class Joint
     {
         public uint id = 0;
@@ -71,7 +65,7 @@ public class CableRoot : MonoBehaviour
         [HideInInspector] public float SlipA = 0.0f;
         [HideInInspector] public float SlipB = 0.0f;
 
-        public List<PinchJoint> pinchJoints = new List<PinchJoint>();
+        public bool pinchedSegment = false;
     }
 
     public float CableHalfWidth = 0.05f;
@@ -81,50 +75,75 @@ public class CableRoot : MonoBehaviour
     
     public List<Joint> Joints;
 
-    static public void UpdatePulley(ref Joint joint, ref Joint jointTail, ref Joint jointHead, float cableHalfWidth)
+    static public void UpdateSegment(Joint head, Joint tail, float cableHalfWidth)
     {
-        if (joint.linkType != LinkType.Rolling) return;
+        if (head.pinchedSegment) return;
 
-        if (jointTail.linkType != LinkType.Rolling)
+        if (head.linkType != LinkType.Rolling)
         {
-            jointTail.tangentPointHead = jointTail.body.transform.TransformPoint(jointTail.tangentOffsetHead);
-            jointTail.tangentPointTail = jointTail.tangentPointHead;
-            joint.tangentOffsetTail = joint.body.PointToShapeTangent(jointTail.tangentPointHead, joint.orientation, cableHalfWidth, out joint.tIdentityTail);
-        }
-        if (jointHead.linkType == LinkType.Rolling)
-        {
-            CableMeshInterface.TangentAlgorithm(jointHead.body, joint.body, out jointHead.tangentOffsetTail, out joint.tangentOffsetHead, out jointHead.tIdentityTail, out joint.tIdentityHead, jointHead.orientation, joint.orientation, cableHalfWidth);
+            if (tail.linkType != LinkType.Rolling)
+            {
+                // update segment tail and head points
+                head.tangentPointTail = head.body.transform.TransformPoint(head.tangentOffsetTail);
+                tail.tangentPointHead = tail.body.transform.TransformPoint(tail.tangentOffsetHead);
+            }
+            else
+            {
+                // update segment tail and head points / tangents
+                head.tangentPointTail = head.body.transform.TransformPoint(head.tangentOffsetTail);
+                tail.tangentOffsetHead = tail.body.PointToShapeTangent(head.tangentPointTail, !tail.orientation, cableHalfWidth, out tail.tIdentityHead);
+
+                // rolling update for tail with new tangent
+                float dist = tail.body.ShapeSurfaceDistance(tail.tIdentityHeadPrev, tail.tIdentityHead, tail.orientation, cableHalfWidth, true);
+                tail.storedLength += dist;
+                head.restLength -= dist;
+                tail.tangentPointHead = tail.body.PulleyCentreGeometrical + tail.tangentOffsetHead;
+                tail.tangentOffsetHead = tail.tangentPointHead - tail.body.CenterOfMass;
+                tail.tIdentityHeadPrev = tail.tIdentityHead;
+            }
         }
         else
         {
-            jointHead.tangentPointTail = jointHead.body.transform.TransformPoint(jointHead.tangentOffsetTail);
-            jointHead.tangentPointHead = jointHead.tangentPointTail;
-            joint.tangentOffsetHead = joint.body.PointToShapeTangent(jointHead.tangentPointTail, !joint.orientation, cableHalfWidth, out joint.tIdentityHead);
+            if (tail.linkType != LinkType.Rolling)
+            {
+                // update segment tail and head points / tangents
+                tail.tangentPointHead = tail.body.transform.TransformPoint(tail.tangentOffsetHead);
+                head.tangentOffsetTail = head.body.PointToShapeTangent(tail.tangentPointHead, head.orientation, cableHalfWidth, out head.tIdentityTail);
+
+                // rolling update for head with new tangent
+                float dist = head.body.ShapeSurfaceDistance(head.tIdentityTailPrev, head.tIdentityTail, head.orientation, cableHalfWidth, true);
+                head.storedLength -= dist;
+                head.restLength += dist;
+                head.tangentPointTail = head.body.PulleyCentreGeometrical + head.tangentOffsetTail;
+                head.tangentOffsetTail = head.tangentPointTail - head.body.CenterOfMass;
+                head.tIdentityTailPrev = head.tIdentityTail;
+            }
+            else
+            {
+                // update segment tail and head tangents
+                CableMeshInterface.TangentAlgorithm(head.body, tail.body, out head.tangentOffsetTail, out tail.tangentOffsetHead, out head.tIdentityTail, out tail.tIdentityHead, head.orientation, tail.orientation, cableHalfWidth);
+
+                // rolling update for tail with new tangent
+                float distTail = tail.body.ShapeSurfaceDistance(tail.tIdentityHeadPrev, tail.tIdentityHead, tail.orientation, cableHalfWidth, true);
+                tail.storedLength += distTail;
+                head.restLength -= distTail;
+                tail.tangentPointHead = tail.body.PulleyCentreGeometrical + tail.tangentOffsetHead;
+                tail.tangentOffsetHead = tail.tangentPointHead - tail.body.CenterOfMass;
+                tail.tIdentityHeadPrev = tail.tIdentityHead;
+
+                // rolling update for head with new tangent
+                float distHead = head.body.ShapeSurfaceDistance(head.tIdentityTailPrev, head.tIdentityTail, head.orientation, cableHalfWidth, true);
+                head.storedLength -= distHead;
+                head.restLength += distHead;
+                head.tangentPointTail = head.body.PulleyCentreGeometrical + head.tangentOffsetTail;
+                head.tangentOffsetTail = head.tangentPointTail - head.body.CenterOfMass;
+                head.tIdentityTailPrev = head.tIdentityTail;
+            }
         }
 
-        float distTail = joint.body.ShapeSurfaceDistance(joint.tIdentityTailPrev, joint.tIdentityTail, joint.orientation, cableHalfWidth, true);
-        float distHead = joint.body.ShapeSurfaceDistance(joint.tIdentityHeadPrev, joint.tIdentityHead, joint.orientation, cableHalfWidth, true);
-
-        // Update stored lengths:
-        joint.storedLength -= distTail;
-        joint.storedLength += distHead;
-
-        // Update rest lengths:
-        joint.restLength += distTail;
-        jointHead.restLength -= distHead;
-
-        Vector2 geometricalCenter = joint.body.PulleyCentreGeometrical;
-        joint.tangentPointTail = geometricalCenter + joint.tangentOffsetTail;
-        joint.tangentPointHead = geometricalCenter + joint.tangentOffsetHead;
-        Vector2 COMOffset = geometricalCenter - joint.body.CenterOfMass;
-        joint.tangentOffsetTail += COMOffset;
-        joint.tangentOffsetHead += COMOffset;
-
-        joint.tIdentityTailPrev = joint.tIdentityTail;
-        joint.tIdentityHeadPrev = joint.tIdentityHead;
+        InitializeSegment(head, tail);
     }
-
-    static public void InitializeSegment(ref Joint joint, in Joint jointTail)
+    static public void InitializeSegment(Joint joint, Joint jointTail)
     {
         Vector3 distVector = joint.tangentPointTail - jointTail.tangentPointHead;
         joint.currentLength = distVector.magnitude;
@@ -199,27 +218,7 @@ public class CableRoot : MonoBehaviour
         {
             Debug.LogError("faulty inverted pulley!");
         }
-            /*
-            if (!(newNode.orientation ^ (Vector2.SignedAngle(newNode.tangentOffsetTail, newNode.tangentOffsetHead) < 0)))
-            {
-                newNode.CutChain();
-                Destroy(newNode.gameObject);
-                return;
-            }
-            else
-            {
-                if (newNode.tail.linkType == LinkType.Rolling)
-                {
-                    newNode.tail.node.tangentIdentityHead = tailIdentity;
-                    newNode.tail.tangentOffsetHead = tailOffset;
-                }
-                if (this.linkType == LinkType.Rolling)
-                {
-                    this.tangentIdentityTail = headIdentity;
-                    this.tangentOffsetTail = headOffset;
-                }
-            }
-            */
+        
         jointNew.storedLength = jointNew.body.ShapeSurfaceDistance(jointNew.tIdentityTail, jointNew.tIdentityHead, jointNew.orientation, root.CableHalfWidth, false);
         initialRestLength -= jointNew.storedLength;
 
@@ -350,32 +349,35 @@ public class CableRoot : MonoBehaviour
             jointHead.tIdentityTailPrev = jointHead.tIdentityTail;
         }
 
-        InitializeSegment(ref jointHead, jointTail);
+        InitializeSegment(jointHead, jointTail);
     }
 
     static public void SetRestlengthsAsCurrent(CableRoot cable)
     {
-        CableRoot.Joint joint;
-        for (int i = 1; i < cable.Joints.Count - 1; i++)
+        for (int i = 1; i < cable.Joints.Count; i++)
         {
-            joint = cable.Joints[i];
-            CableRoot.Joint jointTail = cable.Joints[i - 1];
-            CableRoot.Joint jointHead = cable.Joints[i + 1];
-
-            CableRoot.UpdatePulley(ref joint, ref jointTail, ref jointHead, cable.CableHalfWidth);
-            CableRoot.InitializeSegment(ref joint, jointTail);
-
-            cable.Joints[i] = joint;
-            cable.Joints[i - 1] = jointTail;
-            cable.Joints[i + 1] = jointHead;
+            CableRoot.UpdateSegment(cable.Joints[i], cable.Joints[i - 1], cable.CableHalfWidth);
         }
-        joint = cable.Joints[cable.Joints.Count - 1];
-        CableRoot.InitializeSegment(ref joint, cable.Joints[cable.Joints.Count - 2]);
-        cable.Joints[cable.Joints.Count - 1] = joint;
+
+        if (cable.Looping)
+        {
+            CableRoot.UpdateSegment(cable.Joints[0], cable.Joints[cable.Joints.Count - 1], cable.CableHalfWidth);
+        }
 
         for (int i = 1; i < cable.Joints.Count; i++)
         {
-            joint = cable.Joints[i];
+            Joint joint = cable.Joints[i];
+            if (joint.linkType == LinkType.Rolling)
+            {
+                joint.storedLength = joint.body.ShapeSurfaceDistance(joint.tIdentityTail, joint.tIdentityHead, joint.orientation, cable.CableHalfWidth, false);
+                joint.storedLength += joint.startingLoops * joint.body.LoopLength(cable.CableHalfWidth);
+            }
+            joint.restLength = joint.currentLength;
+        }
+
+        if (cable.Looping)
+        {
+            Joint joint = cable.Joints[0];
             if (joint.linkType == LinkType.Rolling)
             {
                 joint.storedLength = joint.body.ShapeSurfaceDistance(joint.tIdentityTail, joint.tIdentityHead, joint.orientation, cable.CableHalfWidth, false);
@@ -825,19 +827,12 @@ public class CableRoot : MonoBehaviour
         return false;
     }
 
-    static public void ConfigurePinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, bool transitionJoint)
+    static public void UpdatePinchJoint()
     {
-        if (transitionJoint)
-        {
-            // adjust joint tangents and constraint
-            ConfigureTransitionPinchJoint(joint, cable, in manifold);
-            return;
-        }
 
-        //configure pinch joint and constraint
     }
 
-    static void ConfigureTransitionPinchJoint(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold)
+    static public void UpdateTransitionPinchJoint(Joint joint, Joint jointTail, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold)
     {
         int index = cable.Joints.FindIndex(x => x.id == joint.id);
         Vector2 segmentUnitVector = new Vector2(manifold.normal.y, -manifold.normal.x) * (joint.orientation ? -1.0f : 1.0f);
@@ -864,36 +859,24 @@ public class CableRoot : MonoBehaviour
             newTPointB = manifold.contact1.B;
         }
 
+        joint.cableUnitVector = segmentUnitVector;
+        joint.positionError -= joint.currentLength;
+        joint.currentLength = 0.0f;
+        joint.segmentTension = TensionEstimation(joint);
+
+        joint.tangentPointTail = newTPointA - manifold.normal * cable.CableHalfWidth;
+        joint.tangentOffsetTail = newTPointA - joint.body.CenterOfMass;
+
+        jointTail.tangentPointHead = newTPointB + manifold.normal * cable.CableHalfWidth;
+        jointTail.tangentOffsetHead = newTPointB - jointTail.body.CenterOfMass;
+
         if ((index > 0) && (cable.Joints[index - 1].orientation != joint.orientation) && (cable.Joints[index - 1].body == manifold.bodyB))
         {
-            Joint jointTail = cable.Joints[index - 1];
-
-            joint.cableUnitVector = segmentUnitVector;
-            joint.positionError -= joint.currentLength;
-            joint.currentLength = 0.0f;
-            joint.segmentTension = TensionEstimation(joint);
-
-            joint.tangentPointTail = newTPointA - manifold.normal * cable.CableHalfWidth;
-            joint.tangentOffsetTail = newTPointA - joint.body.CenterOfMass;
-
-            jointTail.tangentPointHead = newTPointB + manifold.normal * cable.CableHalfWidth;
-            jointTail.tangentOffsetHead = newTPointB - jointTail.body.CenterOfMass;
-
+           
         }
         else if ((index < cable.Joints.Count - 1) && (cable.Joints[index + 1].orientation != joint.orientation) && (cable.Joints[index + 1].body == manifold.bodyB))
         {
-            Joint jointHead = cable.Joints[index + 1];
-
-            jointHead.cableUnitVector = segmentUnitVector;
-            jointHead.positionError -= jointHead.currentLength;
-            jointHead.currentLength = 0.0f;
-            jointHead.segmentTension = TensionEstimation(jointHead);
-
-            jointHead.tangentPointTail = newTPointB + manifold.normal * cable.CableHalfWidth;
-            jointHead.tangentOffsetTail = newTPointB - jointHead.body.CenterOfMass;
-
-            joint.tangentPointHead = newTPointA - manifold.normal * cable.CableHalfWidth;
-            joint.tangentOffsetHead = newTPointA - joint.body.CenterOfMass;
+            
         }
         else
         {
