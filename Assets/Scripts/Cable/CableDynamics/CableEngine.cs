@@ -127,17 +127,17 @@ public class CableEngine : MonoBehaviour
     void FixedUpdate()
     {
         Framecount++;
-        UpdateCables(in Cables);
+        UpdateSegments(in Cables);
 
         NearContacts.Clear();
         PotentialManifolds.Clear();
         ContactConstraints.Clear();
-
         PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
         PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
         ConfirmPinchContacts(in PotentialManifolds, ref PinchJoints, ref ContactConstraints, Framecount);
-
-        PinchInitializeContactConstraints(ref ContactConstraints);
+        RemovePinchJoints(ref PinchJoints, Framecount);
+        UpdatePinchedSegments(ref PinchJoints);
+       
 
         RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
 
@@ -150,10 +150,12 @@ public class CableEngine : MonoBehaviour
         SegmentConstraints.Clear();
         InitializeSegmentConstraints(in Cables, ref SegmentConstraints);
 
+        PinchInitializeContactConstraints(ref ContactConstraints);
+
         Solver(in SegmentConstraints, ref ContactConstraints, SolverIterations, SegmentsBias, ContactsBias);
     }
 
-    static void UpdateCables(in List<CableRoot> cables)
+    static void UpdateSegments(in List<CableRoot> cables)
     {
         foreach (CableRoot cable in cables)
         {
@@ -282,9 +284,44 @@ public class CableEngine : MonoBehaviour
         */
     }
 
-    static void UpdatePinchJoints(ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints)
+    static void RemovePinchJoints(ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints, uint currentFrame)
     {
+        List<(uint id1, uint id2)> itemsToRemove = new List<(uint id1, uint id2)>();
 
+        foreach (((uint id1, uint id2) key, PinchJointData pinchJoint) in pinchJoints)
+        {
+            if (pinchJoint.lastUpdated != currentFrame)
+            {
+                if (key.id2 == 0)
+                {
+                    // Transition Pinch Joint Removal
+                }
+                else
+                {
+                    // Pinch Joint Removal
+                }
+                itemsToRemove.Add(key);
+            }
+        }
+        foreach ((uint id1, uint id2) key in itemsToRemove)
+        {
+            pinchJoints.Remove(key);
+        }
+    }
+
+    static void UpdatePinchedSegments(ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints)
+    {
+        foreach (((uint id1, uint id2) key, PinchJointData pinchJoint) in pinchJoints)
+        {
+            if (key.id2 == 0)
+            {
+                // Transition Pinch Joint
+            }
+            else
+            {
+                // Pinch Joint
+            }
+        }
     }
 
     static void PinchInitializeContactConstraints(ref List<CablePinchManifold> manifolds)
