@@ -760,19 +760,17 @@ public class CableRoot : MonoBehaviour
         }
     }
 
-    static public bool EvaluatePinchContact(Joint joint, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold, out bool transitionJoint)
+    static public bool EvaluatePinchContact(Joint joint, float cableHalfWidth, Vector2 manifoldNormal, float manifoldDistance)
     {
-        transitionJoint = false;
-        if (manifold.distance >= cable.CableHalfWidth * 2) return false;
+        if (manifoldDistance >= cableHalfWidth * 2) return false;
 
-        if (joint.storedLength >= joint.body.LoopLength(cable.CableHalfWidth)) return true;
+        if (joint.storedLength >= joint.body.LoopLength(cableHalfWidth)) return true;
 
         float epsilon = 0.000001f;
-        Vector2 p = new Vector2(manifold.normal.y, -manifold.normal.x);
+        Vector2 p = new Vector2(manifoldNormal.y, -manifoldNormal.x);
         float tp = Vector2.Dot(p, joint.tangentOffsetTail);
-        if (Mathf.Abs(tp) < epsilon) transitionJoint = true;
         float hp = Vector2.Dot(p, joint.tangentOffsetHead);
-        if (Mathf.Abs(hp) < epsilon) transitionJoint = true;
+
         if (joint.orientation)
         {
             if (tp > -epsilon)
@@ -781,8 +779,8 @@ public class CableRoot : MonoBehaviour
                     return true;
                 else
                 {
-                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
                     if (tn - hn > 0.0f) return true;
                 }
             }
@@ -792,8 +790,8 @@ public class CableRoot : MonoBehaviour
                     return false;
                 else
                 {
-                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
                     if (hn - tn > 0.0f) return true;
                 }
             }
@@ -806,8 +804,8 @@ public class CableRoot : MonoBehaviour
                     return true;
                 else
                 {
-                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
                     if (tn - hn > 0.0f) return true;
                 }
             }
@@ -817,14 +815,21 @@ public class CableRoot : MonoBehaviour
                     return false;
                 else
                 {
-                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
                     if (hn - tn > 0.0f) return true;
                 }
             }
         }
 
         return false;
+    }
+
+
+
+    static public void SetupPinchedSegment(Joint joint, Joint jointTail)
+    {
+
     }
 
     static public void UpdatePinchJoint()
@@ -869,18 +874,5 @@ public class CableRoot : MonoBehaviour
 
         jointTail.tangentPointHead = newTPointB + manifold.normal * cable.CableHalfWidth;
         jointTail.tangentOffsetHead = newTPointB - jointTail.body.CenterOfMass;
-
-        if ((index > 0) && (cable.Joints[index - 1].orientation != joint.orientation) && (cable.Joints[index - 1].body == manifold.bodyB))
-        {
-           
-        }
-        else if ((index < cable.Joints.Count - 1) && (cable.Joints[index + 1].orientation != joint.orientation) && (cable.Joints[index + 1].body == manifold.bodyB))
-        {
-            
-        }
-        else
-        {
-            print("is not possible");
-        }
     }
 }

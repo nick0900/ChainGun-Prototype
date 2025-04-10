@@ -102,13 +102,17 @@ public class CableEngine : MonoBehaviour
     {
         public uint lastUpdated = 0;
         public CableRoot cable = null;
-        public CableRoot.Joint pinchJoint = null;
-        public CableRoot.Joint headJoint = null;
-        public CableRoot.Joint tailJoint = null;
+        public CableRoot.Joint segment = null;
+        public CableRoot.Joint segmentTail = null;
         public CablePinchManifold manifold;
+
+        // if a double pinched joint, the id for the other pinched segment
+        // needed for proper removal of pinched joint
+        public uint doublePinchedOtherId = 0;
+        public bool isMainJoint = false;
     }
 
-    [SerializeField] private Dictionary<(uint id1,uint id2), PinchJointData> PinchJoints = new Dictionary<(uint id1, uint id2), PinchJointData>();
+    [SerializeField] private Dictionary<uint, PinchJointData> PinchJoints = new Dictionary<uint, PinchJointData>();
     private List<CablePinchManifold> ContactConstraints = new List<CablePinchManifold>();
     struct SegmentHit
     {
@@ -236,41 +240,27 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void ConfirmPinchContacts(in List<PotentialPinchManifold> manifolds, ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints, ref List<CablePinchManifold> contactConstraints, uint currentFrame)
+    static void ConfirmPinchContacts(in List<PotentialPinchManifold> manifolds, ref Dictionary<uint, PinchJointData> pinchJoints, ref List<CablePinchManifold> contactConstraints, uint currentFrame)
     {
-        /*
         foreach (PotentialPinchManifold manifold in manifolds)
         {
             float maxWidth = 0.0f;
+            List<(CableRoot.Joint joint, CableRoot cable)> confirmedJoints = new List<(CableRoot.Joint joint, CableRoot cable)>();
             if (manifold.attach1.joints != null)
                 foreach ((CableRoot.Joint joint, CableRoot root) in manifold.attach1.joints)
                 {
-                    bool transitionJoint;
-                    if (CableRoot.EvaluatePinchContact(joint, root, in manifold.manifold, out transitionJoint))
+                    if (CableRoot.EvaluatePinchContact(joint, root.CableHalfWidth, manifold.manifold.normal, manifold.manifold.distance))
                     {
-                        CableRoot.ConfigurePinchJoint(joint, root, in manifold.manifold, transitionJoint);
+                        confirmedJoints.Add((joint, root));
                         maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                     }
                 }
             if (manifold.attach2.joints != null)
                 foreach ((CableRoot.Joint joint, CableRoot root) in manifold.attach2.joints)
                 {
-                    bool transitionJoint;
-                    CablePinchManifold reverseManifold = manifold.manifold;
-                    reverseManifold.normal *= -1.0f;
-                    reverseManifold.bodyA = reverseManifold.bodyB;
-                    reverseManifold.bodyB = manifold.manifold.bodyA;
-                    reverseManifold.contact1.A = reverseManifold.contact1.B;
-                    reverseManifold.contact1.B = manifold.manifold.contact1.A;
-                    if (reverseManifold.contactCount == 2)
+                    if (CableRoot.EvaluatePinchContact(joint, root.CableHalfWidth, -manifold.manifold.normal, manifold.manifold.distance))
                     {
-                        reverseManifold.contact2.A = reverseManifold.contact2.B;
-                        reverseManifold.contact2.B = manifold.manifold.contact2.A;
-                    }
-
-                    if (CableRoot.EvaluatePinchContact(joint, root, in reverseManifold, out transitionJoint))
-                    {
-                        CableRoot.ConfigurePinchJoint(joint, root, in reverseManifold, transitionJoint);
+                        confirmedJoints.Add((joint, root));
                         maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                     }
                 }
@@ -278,49 +268,175 @@ public class CableEngine : MonoBehaviour
             {
                 CablePinchManifold temp = manifold.manifold;
                 temp.depth = maxWidth - temp.distance;
-                confirmedConstraints.Add(temp);
+                contactConstraints.Add(temp);
             }
+
+            ProcessConfirmedPinchJoints(ref confirmedJoints, in manifold.manifold, ref pinchJoints, currentFrame);
         }
-        */
     }
 
-    static void RemovePinchJoints(ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints, uint currentFrame)
+    static void ProcessConfirmedPinchJoints(ref List<(CableRoot.Joint joint, CableRoot cable)> confirmedJoints, in CablePinchManifold manifold, ref Dictionary<uint, PinchJointData> pinchJoints, uint currentFrame)
     {
-        List<(uint id1, uint id2)> itemsToRemove = new List<(uint id1, uint id2)>();
+        // find pairs of pinched joints
+        for (int i = 0; i < confirmedJoints.Count - 1; i++)
+        {
+            CableRoot cable = confirmedJoints[i].cable;
+            CableRoot.Joint joint = confirmedJoints[i].joint;
+            int index = cable.Joints.FindIndex(x => x.id == joint.id);
 
-        foreach (((uint id1, uint id2) key, PinchJointData pinchJoint) in pinchJoints)
+            for (int j = i + 1;  j < confirmedJoints.Count; j++)
+            {
+                // joints of different cables can't be paired up
+                if (confirmedJoints[j].cable != cable) continue;
+                CableRoot.Joint jointOther = confirmedJoints[j].joint;
+                uint pinchedSegmentId = 0;
+                bool reverseManifold = false;
+                CableRoot.Joint pinchedSegment = null;
+                CableRoot.Joint pinchedSegmentTail = null;
+
+                // investigate next joint in cable
+                if ((index < cable.Joints.Count - 1) && (cable.Joints[index + 1].id == jointOther.id))
+                {
+                    // check if the joints are on the same body in the manifold or different ones
+                    if (jointOther.body == joint.body)
+                    {
+                        // Double Pinched Segment Joint
+                        PinchJointData pinched = pinchJoints[jointOther.id];
+                        pinched.manifold = ReverseManifold(in manifold, jointOther.body == manifold.bodyB);
+                        pinched.lastUpdated = currentFrame;
+
+                        // this pair is guaranteed to be initialized
+                        // remove and start next search
+                        confirmedJoints.RemoveAt(j);
+                        confirmedJoints.RemoveAt(i);
+                        i--;
+                        break;
+                    }
+                    else if (jointOther.orientation != joint.orientation)
+                    {
+                        // Single Pinched Segment Joint
+                        pinchedSegmentId = jointOther.id;
+                        reverseManifold = jointOther.body == manifold.bodyB;
+                        pinchedSegment = jointOther;
+                        pinchedSegmentTail = joint;
+                    }
+                }
+                else if ((index > 0) && (cable.Joints[index - 1].id == jointOther.id)) // investigate previous joint in cable
+                {
+                    // check if the joints are on the same body in the manifold or different ones
+                    if (jointOther.body == joint.body)
+                    {
+                        // Double Pinched Segment Joint
+                        PinchJointData pinched = pinchJoints[joint.id];
+                        pinched.manifold = ReverseManifold(in manifold, joint.body == manifold.bodyB);
+                        pinched.lastUpdated = currentFrame;
+
+                        // this pair is guaranteed to be initialized
+                        // remove and start next search
+                        confirmedJoints.RemoveAt(j);
+                        confirmedJoints.RemoveAt(i);
+                        i--;
+                        break;
+                    }
+                    else if (jointOther.orientation != joint.orientation)
+                    {
+                        // Single Pinched Segment Joint
+                        pinchedSegmentId = joint.id;
+                        reverseManifold = joint.body == manifold.bodyB;
+                        pinchedSegment = joint;
+                        pinchedSegmentTail = jointOther;
+                    }
+                }
+
+                if (pinchedSegmentId != 0)
+                {
+                    PinchJointData pinchedData;
+                    if (pinchJoints.TryGetValue(pinchedSegmentId, out pinchedData))
+                    {
+                        // pinched segment already exists
+                        pinchedData.manifold = ReverseManifold(in manifold, reverseManifold);
+                        pinchedData.lastUpdated = currentFrame;
+                    }
+                    else
+                    {
+                        // create pinched segment
+                        pinchedData = new PinchJointData();
+                        pinchedData.cable = cable;
+                        pinchedData.segment = pinchedSegment;
+                        pinchedData.segmentTail = pinchedSegmentTail;
+                        pinchedData.manifold = ReverseManifold(in manifold, reverseManifold);
+                        pinchedData.lastUpdated = currentFrame;
+                        pinchJoints.Add(pinchedSegmentId, pinchedData);
+                    }
+
+                    // remove and start next search
+                    confirmedJoints.RemoveAt(j);
+                    confirmedJoints.RemoveAt(i);
+                    i--;
+                    break;
+                }
+            }
+        }
+
+        // all remaining confirmed joints are new double pinch joints that need to be created
+
+        foreach ((CableRoot.Joint joint, CableRoot cable) in confirmedJoints)
+        {
+            int index = cable.Joints.FindIndex(x => x.id == joint.id);
+        }
+    }
+
+    static CablePinchManifold ReverseManifold(in CablePinchManifold manifold, bool reverse)
+    {
+        if (!reverse)
+        {
+            return manifold;
+        }
+        CablePinchManifold reversed = manifold;
+        reversed.normal *= -1;
+        reversed.bodyA = manifold.bodyB;
+        reversed.bodyB = manifold.bodyA;
+        reversed.contact1.A = manifold.contact1.B;
+        reversed.contact1.B = manifold.contact1.A;
+        if (reversed.contactCount == 2)
+        {
+            reversed.contact2 = reversed.contact1;
+            reversed.contact1.A = manifold.contact2.B;
+            reversed.contact1.B = manifold.contact2.A;
+        }
+        return reversed;
+    }
+
+    static void RemovePinchJoints(ref Dictionary<uint, PinchJointData> pinchJoints, uint currentFrame)
+    {
+        List<uint> itemsToRemove = new List<uint>();
+
+        foreach ((uint key, PinchJointData pinchJoint) in pinchJoints)
         {
             if (pinchJoint.lastUpdated != currentFrame)
             {
-                if (key.id2 == 0)
+                if (pinchJoint.doublePinchedOtherId == 0)
                 {
                     // Transition Pinch Joint Removal
                 }
                 else
                 {
-                    // Pinch Joint Removal
+                    // Double Pinch Joint Removal
                 }
                 itemsToRemove.Add(key);
             }
         }
-        foreach ((uint id1, uint id2) key in itemsToRemove)
+        foreach (uint key in itemsToRemove)
         {
             pinchJoints.Remove(key);
         }
     }
 
-    static void UpdatePinchedSegments(ref Dictionary<(uint id1, uint id2), PinchJointData> pinchJoints)
+    static void UpdatePinchedSegments(ref Dictionary<uint, PinchJointData> pinchJoints)
     {
-        foreach (((uint id1, uint id2) key, PinchJointData pinchJoint) in pinchJoints)
+        foreach ((uint key, PinchJointData pinchJoint) in pinchJoints)
         {
-            if (key.id2 == 0)
-            {
-                // Transition Pinch Joint
-            }
-            else
-            {
-                // Pinch Joint
-            }
+            // pinched segment update
         }
     }
 
