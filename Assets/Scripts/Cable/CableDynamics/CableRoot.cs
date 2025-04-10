@@ -487,7 +487,7 @@ public class CableRoot : MonoBehaviour
             }
         }
         // comment out for warm starting
-        //joint.totalLambda = 0;
+        joint.totalLambda = 0;
         return constraint;
     }
 
