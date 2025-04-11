@@ -155,8 +155,15 @@ public class CableRoot : MonoBehaviour
         return Mathf.Max(currentNode.currentLength - currentNode.restLength, 0.0f);
     }
 
-
     static public Joint AddJoint(CableRoot root, Joint segment, CableMeshInterface body)
+    {
+        int segmentIndex = root.Joints.FindIndex(x => x == segment);
+        Joint jointHead = segment;
+        Joint jointTail = root.Joints[segmentIndex - 1];
+        return AddJoint(root, segment, body, body.Orientation(jointTail.tangentPointHead, jointHead.tangentPointTail));
+    }
+
+    static public Joint AddJoint(CableRoot root, Joint segment, CableMeshInterface body, bool orientation)
     {
         int segmentIndex = root.Joints.FindIndex(x => x == segment);
         Joint jointHead = segment;
@@ -166,7 +173,7 @@ public class CableRoot : MonoBehaviour
         jointNew.id = GetNewJointID;
         jointNew.linkType = LinkType.Rolling;
         jointNew.body = body;
-        jointNew.orientation = body.Orientation(jointTail.tangentPointHead, jointHead.tangentPointTail);
+        jointNew.orientation = orientation;
 
         // Recalculate all relevant tangents
         float initialRestLength = jointHead.restLength;
@@ -756,27 +763,46 @@ public class CableRoot : MonoBehaviour
         }
     }
 
-    static public bool EvaluateTransitionPinchJoint(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold, ref List<(Joint joint, CableRoot cable)> otherJoints)
+    static public bool EvaluateTransitionPinchJoint(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold)
     {
+        bool ret = true;
+        
         int i = cable.Joints.FindIndex(x => x.id == joint.id);
         if (i == -1) return false;
-        if (i >= cable.Joints.Count - 1) return false;
+
+        if (i >= cable.Joints.Count - 1) ret = false;
         Joint jointHead = cable.Joints[i + 1];
-        if (jointHead.body != manifold.bodyA) return false;
+        if (jointHead.body != manifold.bodyB) ret = false;
+        if (jointHead.orientation == joint.orientation) ret = false;
 
-        i = otherJoints.FindIndex(x => x.joint.id == jointHead.id);
-        if (i != -1) otherJoints.RemoveAt(i);
+        if (ret)
+        {
+            UpdatePinchedSegment(jointHead, joint, cable.CableHalfWidth, in manifold);
+        }
+        else if (i > 0)
+        {
+            // to signal cable engine to possibly not evaluate this joint further for pinching
+            Joint jointTail = cable.Joints[i - 1];
+            ret = (jointTail.body == manifold.bodyB) && (jointTail.orientation != joint.orientation);
+        }
 
-        UpdatePinchedSegment(jointHead, joint, cable.CableHalfWidth, in manifold);
-
-        return true;
+        return ret;
     }
 
     static public bool EvaluatePinchJoint(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold)
     {
         if (!StoredCableIntersection(cable, joint, in manifold)) return false;
 
-        print("Super Pinch!!!");
+        //print("Super Pinch!!!");
+
+        //int i = cable.Joints.FindIndex(x => x.id == joint.id);
+        //AddJoint(cable, joint, manifold.bodyB, !joint.orientation);
+        //Joint newJoint = cable.Joints[i];
+        //AddJoint(cable, newJoint, joint.body, joint.orientation);
+
+        //UpdatePinchedSegment(joint, newJoint, cable.CableHalfWidth, in manifold);
+        //UpdatePinchedSegment(newJoint, cable.Joints[i], cable.CableHalfWidth, in manifold);
+
         return true;
     }
 
@@ -845,7 +871,7 @@ public class CableRoot : MonoBehaviour
 
     static void UpdatePinchedSegment(Joint joint, Joint jointTail, float cableHalfWidth, in CableMeshInterface.CablePinchManifold manifold)
     {
-        Vector2 segmentUnitVector = new Vector2(manifold.normal.y, -manifold.normal.x) * (joint.orientation ? -1.0f : 1.0f);
+        Vector2 segmentUnitVector = new Vector2(manifold.normal.y, -manifold.normal.x) * (joint.orientation ? 1.0f : -1.0f);
 
         Vector2 pinchPointA;
         Vector2 pinchPointB;
@@ -872,13 +898,13 @@ public class CableRoot : MonoBehaviour
         }
         pinchPointA += manifold.normal * cableHalfWidth;
         pinchPointB -= manifold.normal * cableHalfWidth;
-        newCurrentLength = Mathf.Sqrt((pinchPointA - jointTail.tangentPointHead).sqrMagnitude + newCurrentLength + (joint.tangentPointTail - pinchPointB).sqrMagnitude);
+        newCurrentLength = Mathf.Sqrt((pinchPointB - jointTail.tangentPointHead).sqrMagnitude + newCurrentLength + (joint.tangentPointTail - pinchPointA).sqrMagnitude);
 
-        //joint.tangentPointTail = pinchPointA;
-        //joint.tangentOffsetTail = pinchPointA - joint.body.CenterOfMass;
+        //joint.tangentPointTail = pinchPointB;
+        //joint.tangentOffsetTail = pinchPointB - joint.body.CenterOfMass;
 
-        //jointTail.tangentPointHead = pinchPointB;
-        //jointTail.tangentOffsetHead = pinchPointB - jointTail.body.CenterOfMass;
+        //jointTail.tangentPointHead = pinchPointA;
+        //jointTail.tangentOffsetHead = pinchPointA - jointTail.body.CenterOfMass;
 
         joint.cableUnitVector = segmentUnitVector;
         joint.positionError -= joint.currentLength;

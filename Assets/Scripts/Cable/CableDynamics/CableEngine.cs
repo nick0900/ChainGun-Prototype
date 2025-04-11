@@ -245,7 +245,7 @@ public class CableEngine : MonoBehaviour
                 {
                     if (root.CableHalfWidth * 2 >= manifold.manifold.distance)
                     {
-                        if (CableRoot.EvaluateTransitionPinchJoint(root, joint, reversedManifold, ref jointsB))
+                        if (CableRoot.EvaluateTransitionPinchJoint(root, joint, manifold.manifold))
                         {
                             maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                         }
@@ -260,7 +260,7 @@ public class CableEngine : MonoBehaviour
             // if not a transition pinch joint, evaluate if it is on the stored cable section of a body and add new joints
             foreach ((CableRoot.Joint joint, CableRoot root) in jointsB)
             {
-                if (CableRoot.EvaluateTransitionPinchJoint(root, joint, in manifold.manifold, ref jointsA))
+                if (CableRoot.EvaluateTransitionPinchJoint(root, joint, in reversedManifold))
                 {
                     maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                 }
