@@ -367,6 +367,8 @@ public class CableEngine : MonoBehaviour
                         pinchedData.manifold = ReverseManifold(in manifold, reverseManifold);
                         pinchedData.lastUpdated = currentFrame;
                         pinchJoints.Add(pinchedSegmentId, pinchedData);
+
+                        CableRoot.SetupPinchedSegment(pinchedData.segment, pinchedData.segmentTail);
                     }
 
                     // remove and start next search
@@ -379,10 +381,10 @@ public class CableEngine : MonoBehaviour
         }
 
         // all remaining confirmed joints are new double pinch joints that need to be created
-
         foreach ((CableRoot.Joint joint, CableRoot cable) in confirmedJoints)
         {
             int index = cable.Joints.FindIndex(x => x.id == joint.id);
+            // create two new joints and configure two pinched segments
         }
     }
 

@@ -64,8 +64,6 @@ public class CableRoot : MonoBehaviour
         [HideInInspector] public int slipJointsCount = 0;
         [HideInInspector] public float SlipA = 0.0f;
         [HideInInspector] public float SlipB = 0.0f;
-
-        public bool pinchedSegment = false;
     }
 
     public float CableHalfWidth = 0.05f;
@@ -77,8 +75,6 @@ public class CableRoot : MonoBehaviour
 
     static public void UpdateSegment(Joint head, Joint tail, float cableHalfWidth)
     {
-        if (head.pinchedSegment) return;
-
         if (head.linkType != LinkType.Rolling)
         {
             if (tail.linkType != LinkType.Rolling)
@@ -825,14 +821,7 @@ public class CableRoot : MonoBehaviour
         return false;
     }
 
-
-
-    static public void SetupPinchedSegment(Joint joint, Joint jointTail)
-    {
-
-    }
-
-    static public void UpdatePinchJoint()
+    static public void UpdatePinchedSegment(Joint joint, Joint jointTail, float cableHalfWidth, in CableMeshInterface.CablePinchManifold manifold)
     {
 
     }
