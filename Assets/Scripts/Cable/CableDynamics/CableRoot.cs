@@ -756,14 +756,36 @@ public class CableRoot : MonoBehaviour
         }
     }
 
-    static public bool EvaluatePinchContact(Joint joint, float cableHalfWidth, Vector2 manifoldNormal, float manifoldDistance)
+    static public bool EvaluateTransitionPinchJoint(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold, ref List<(Joint joint, CableRoot cable)> otherJoints)
     {
-        if (manifoldDistance >= cableHalfWidth * 2) return false;
+        int i = cable.Joints.FindIndex(x => x.id == joint.id);
+        if (i == -1) return false;
+        if (i >= cable.Joints.Count - 1) return false;
+        Joint jointHead = cable.Joints[i];
+        if (jointHead.body != manifold.bodyB) return false;
 
-        if (joint.storedLength >= joint.body.LoopLength(cableHalfWidth)) return true;
+        i = otherJoints.FindIndex(x => x.joint.id == jointHead.id);
+        if (i != -1) otherJoints.RemoveAt(i);
+
+        UpdatePinchedSegment(jointHead, joint, cable.CableHalfWidth, in manifold);
+
+        return true;
+    }
+
+    static public bool EvaluatePinchJoint(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold)
+    {
+        if (!StoredCableIntersection(cable, joint, in manifold)) return false;
+
+        print("Super Pinch!!!");
+        return true;
+    }
+
+    static bool StoredCableIntersection(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold)
+    {
+        if (joint.storedLength >= joint.body.LoopLength(cable.CableHalfWidth)) return true;
 
         float epsilon = 0.000001f;
-        Vector2 p = new Vector2(manifoldNormal.y, -manifoldNormal.x);
+        Vector2 p = new Vector2(manifold.normal.y, -manifold.normal.x);
         float tp = Vector2.Dot(p, joint.tangentOffsetTail);
         float hp = Vector2.Dot(p, joint.tangentOffsetHead);
 
@@ -775,8 +797,8 @@ public class CableRoot : MonoBehaviour
                     return true;
                 else
                 {
-                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
                     if (tn - hn > 0.0f) return true;
                 }
             }
@@ -786,8 +808,8 @@ public class CableRoot : MonoBehaviour
                     return false;
                 else
                 {
-                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
                     if (hn - tn > 0.0f) return true;
                 }
             }
@@ -800,8 +822,8 @@ public class CableRoot : MonoBehaviour
                     return true;
                 else
                 {
-                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
                     if (tn - hn > 0.0f) return true;
                 }
             }
@@ -811,8 +833,8 @@ public class CableRoot : MonoBehaviour
                     return false;
                 else
                 {
-                    float tn = Vector2.Dot(manifoldNormal, joint.tangentOffsetTail);
-                    float hn = Vector2.Dot(manifoldNormal, joint.tangentOffsetHead);
+                    float tn = Vector2.Dot(manifold.normal, joint.tangentOffsetTail);
+                    float hn = Vector2.Dot(manifold.normal, joint.tangentOffsetHead);
                     if (hn - tn > 0.0f) return true;
                 }
             }
@@ -821,47 +843,47 @@ public class CableRoot : MonoBehaviour
         return false;
     }
 
-    static public void UpdatePinchedSegment(Joint joint, Joint jointTail, float cableHalfWidth, in CableMeshInterface.CablePinchManifold manifold)
+    static void UpdatePinchedSegment(Joint joint, Joint jointTail, float cableHalfWidth, in CableMeshInterface.CablePinchManifold manifold)
     {
-
-    }
-
-    static public void UpdateTransitionPinchJoint(Joint joint, Joint jointTail, CableRoot cable, in CableMeshInterface.CablePinchManifold manifold)
-    {
-        int index = cable.Joints.FindIndex(x => x.id == joint.id);
         Vector2 segmentUnitVector = new Vector2(manifold.normal.y, -manifold.normal.x) * (joint.orientation ? -1.0f : 1.0f);
 
-        Vector2 newTPointA;
-        Vector2 newTPointB;
+        Vector2 pinchPointA;
+        Vector2 pinchPointB;
+        float newCurrentLength = 0.0f;
 
         if (manifold.contactCount == 2)
         {
+            newCurrentLength = (manifold.contact1.A - manifold.contact2.A).sqrMagnitude;
             if (joint.orientation)
             {
-                newTPointA = manifold.contact1.A;
-                newTPointB = manifold.contact2.B;
+                pinchPointA = manifold.contact1.A;
+                pinchPointB = manifold.contact2.B;
             }
             else
             {
-                newTPointA = manifold.contact2.A;
-                newTPointB = manifold.contact1.B;
+                pinchPointA = manifold.contact2.A;
+                pinchPointB = manifold.contact1.B;
             }
         }
         else
         {
-            newTPointA = manifold.contact1.A;
-            newTPointB = manifold.contact1.B;
+            pinchPointA = manifold.contact1.A;
+            pinchPointB = manifold.contact1.B;
         }
+        pinchPointA -= manifold.normal * cableHalfWidth;
+        pinchPointB += manifold.normal * cableHalfWidth;
+        newCurrentLength = Mathf.Sqrt((pinchPointA - jointTail.tangentPointHead).sqrMagnitude + newCurrentLength + (joint.tangentPointTail - pinchPointB).sqrMagnitude);
+
+        //joint.tangentPointTail = pinchPointA;
+        //joint.tangentOffsetTail = pinchPointA - joint.body.CenterOfMass;
+
+        //jointTail.tangentPointHead = pinchPointB;
+        //jointTail.tangentOffsetHead = pinchPointB - jointTail.body.CenterOfMass;
 
         joint.cableUnitVector = segmentUnitVector;
         joint.positionError -= joint.currentLength;
-        joint.currentLength = 0.0f;
+        joint.positionError += newCurrentLength;
+        joint.currentLength = newCurrentLength;
         joint.segmentTension = TensionEstimation(joint);
-
-        joint.tangentPointTail = newTPointA - manifold.normal * cable.CableHalfWidth;
-        joint.tangentOffsetTail = newTPointA - joint.body.CenterOfMass;
-
-        jointTail.tangentPointHead = newTPointB + manifold.normal * cable.CableHalfWidth;
-        jointTail.tangentOffsetHead = newTPointB - jointTail.body.CenterOfMass;
     }
 }
