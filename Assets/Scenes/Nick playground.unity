@@ -4562,7 +4562,6 @@ MonoBehaviour:
     slipJointsCount: 0
     SlipA: 0
     SlipB: 0
-    pinchJoints: []
   - id: 0
     linkType: 0
     body: {fileID: 1286890990}
@@ -4589,7 +4588,6 @@ MonoBehaviour:
     slipJointsCount: 0
     SlipA: 0
     SlipB: 0
-    pinchJoints: []
   - id: 0
     linkType: 1
     body: {fileID: 517337753}
@@ -4616,7 +4614,6 @@ MonoBehaviour:
     slipJointsCount: 0
     SlipA: 0
     SlipB: 0
-    pinchJoints: []
 --- !u!61 &1313746799
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5548,7 +5545,6 @@ MonoBehaviour:
     slipJointsCount: 0
     SlipA: 0
     SlipB: 0
-    pinchJoints: []
   - id: 0
     linkType: 0
     body: {fileID: 1286890990}
@@ -5575,7 +5571,6 @@ MonoBehaviour:
     slipJointsCount: 0
     SlipA: 0
     SlipB: 0
-    pinchJoints: []
   - id: 0
     linkType: 0
     body: {fileID: 31488575}
@@ -5602,7 +5597,6 @@ MonoBehaviour:
     slipJointsCount: 0
     SlipA: 0
     SlipB: 0
-    pinchJoints: []
   - id: 0
     linkType: 1
     body: {fileID: 1525189708}
@@ -5629,7 +5623,6 @@ MonoBehaviour:
     slipJointsCount: 0
     SlipA: 0
     SlipB: 0
-    pinchJoints: []
 --- !u!61 &1610840840
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -5711,7 +5704,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1610840838}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9660ef322977e0f428afca4cc34bf911, type: 3}
   m_Name: 

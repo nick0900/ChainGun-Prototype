@@ -203,8 +203,8 @@ public class CirclePulley : CableMeshInterface
             {
                 //pulley intersection
                 d = d.normalized;
-                tangentOffset1 = d * r1;
-                tangentOffset2 = -d * r2;
+                tangentOffset1 = d * (r1 + cableHalfWidth);
+                tangentOffset2 = -d * (r2 + cableHalfWidth);
 
                 angle1 = -Vector2.SignedAngle(d, Vector2.left) - this.ColliderTransform.rotation.eulerAngles.z + 180.0f;
                 angle2 = -Vector2.SignedAngle(-d, Vector2.left) - pulley2.ColliderTransform.rotation.eulerAngles.z + 180.0f;

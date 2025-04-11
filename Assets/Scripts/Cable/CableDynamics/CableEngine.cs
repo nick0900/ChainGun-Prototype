@@ -229,6 +229,7 @@ public class CableEngine : MonoBehaviour
             float maxWidth = 0.0f;
             List<(CableRoot.Joint joint, CableRoot root)> jointsA = new List<(CableRoot.Joint joint, CableRoot cable)>();
             List<(CableRoot.Joint joint, CableRoot root)> jointsB = new List<(CableRoot.Joint joint, CableRoot cable)>();
+            CablePinchManifold reversedManifold = ReversedManifold(manifold.manifold);
             // gather all joints from body B
             if (manifold.attach2.joints != null)
                 foreach (var entry in manifold.attach2.joints)
@@ -244,7 +245,7 @@ public class CableEngine : MonoBehaviour
                 {
                     if (root.CableHalfWidth * 2 >= manifold.manifold.distance)
                     {
-                        if (CableRoot.EvaluateTransitionPinchJoint(root, joint, manifold.manifold, ref jointsB))
+                        if (CableRoot.EvaluateTransitionPinchJoint(root, joint, reversedManifold, ref jointsB))
                         {
                             maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                         }
@@ -257,10 +258,9 @@ public class CableEngine : MonoBehaviour
             // Check for transition pinch joints on body B.
             // if there are, removes the connected joint in jointsA as it needs not be checked more
             // if not a transition pinch joint, evaluate if it is on the stored cable section of a body and add new joints
-            CablePinchManifold reversedManifold = ReversedManifold(manifold.manifold);
             foreach ((CableRoot.Joint joint, CableRoot root) in jointsB)
             {
-                if (CableRoot.EvaluateTransitionPinchJoint(root, joint, in reversedManifold, ref jointsA))
+                if (CableRoot.EvaluateTransitionPinchJoint(root, joint, in manifold.manifold, ref jointsA))
                 {
                     maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                 }

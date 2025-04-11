@@ -761,8 +761,8 @@ public class CableRoot : MonoBehaviour
         int i = cable.Joints.FindIndex(x => x.id == joint.id);
         if (i == -1) return false;
         if (i >= cable.Joints.Count - 1) return false;
-        Joint jointHead = cable.Joints[i];
-        if (jointHead.body != manifold.bodyB) return false;
+        Joint jointHead = cable.Joints[i + 1];
+        if (jointHead.body != manifold.bodyA) return false;
 
         i = otherJoints.FindIndex(x => x.joint.id == jointHead.id);
         if (i != -1) otherJoints.RemoveAt(i);
@@ -870,8 +870,8 @@ public class CableRoot : MonoBehaviour
             pinchPointA = manifold.contact1.A;
             pinchPointB = manifold.contact1.B;
         }
-        pinchPointA -= manifold.normal * cableHalfWidth;
-        pinchPointB += manifold.normal * cableHalfWidth;
+        pinchPointA += manifold.normal * cableHalfWidth;
+        pinchPointB -= manifold.normal * cableHalfWidth;
         newCurrentLength = Mathf.Sqrt((pinchPointA - jointTail.tangentPointHead).sqrMagnitude + newCurrentLength + (joint.tangentPointTail - pinchPointB).sqrMagnitude);
 
         //joint.tangentPointTail = pinchPointA;
