@@ -288,7 +288,7 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static CablePinchManifold ReversedManifold(in CablePinchManifold manifold)
+    static public CablePinchManifold ReversedManifold(in CablePinchManifold manifold)
     {
         CablePinchManifold reversed = manifold;
         reversed.normal *= -1;

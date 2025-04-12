@@ -160,20 +160,12 @@ public class CableRoot : MonoBehaviour
         int segmentIndex = root.Joints.FindIndex(x => x == segment);
         Joint jointHead = segment;
         Joint jointTail = root.Joints[segmentIndex - 1];
-        return AddJoint(root, segment, body, body.Orientation(jointTail.tangentPointHead, jointHead.tangentPointTail));
-    }
-
-    static public Joint AddJoint(CableRoot root, Joint segment, CableMeshInterface body, bool orientation)
-    {
-        int segmentIndex = root.Joints.FindIndex(x => x == segment);
-        Joint jointHead = segment;
-        Joint jointTail = root.Joints[segmentIndex - 1];
         Joint jointNew = new Joint();
 
         jointNew.id = GetNewJointID;
         jointNew.linkType = LinkType.Rolling;
         jointNew.body = body;
-        jointNew.orientation = orientation;
+        jointNew.orientation = body.Orientation(jointTail.tangentPointHead, jointHead.tangentPointTail);
 
         // Recalculate all relevant tangents
         float initialRestLength = jointHead.restLength;
@@ -795,13 +787,89 @@ public class CableRoot : MonoBehaviour
 
         //print("Super Pinch!!!");
 
-        //int i = cable.Joints.FindIndex(x => x.id == joint.id);
-        //AddJoint(cable, joint, manifold.bodyB, !joint.orientation);
-        //Joint newJoint = cable.Joints[i];
-        //AddJoint(cable, newJoint, joint.body, joint.orientation);
+        int segmentIndex = cable.Joints.FindIndex(x => x.id == joint.id);
+        Joint jointHead = joint;
 
-        //UpdatePinchedSegment(joint, newJoint, cable.CableHalfWidth, in manifold);
-        //UpdatePinchedSegment(newJoint, cable.Joints[i], cable.CableHalfWidth, in manifold);
+        float totalStoredLength = jointHead.storedLength;
+        float loopLength = jointHead.body.LoopLength(cable.CableHalfWidth);
+        int loops = Mathf.FloorToInt(jointHead.storedLength / loopLength);
+        totalStoredLength -= loops * loopLength;
+
+        Joint jointTail = new Joint();
+
+        jointTail.id = GetNewJointID;
+        jointTail.linkType = LinkType.Rolling;
+        jointTail.body = jointHead.body;
+        jointTail.orientation = jointHead.orientation;
+
+        jointTail.storedLength = jointHead.storedLength;
+        jointTail.restLength = jointHead.restLength;
+        jointTail.currentLength = jointHead.currentLength;
+        jointTail.positionError = jointHead.positionError;
+        jointTail.segmentTension = jointHead.segmentTension;
+        jointTail.tangentOffsetTail = jointHead.tangentOffsetTail;
+        jointTail.tangentPointTail = jointHead.tangentPointTail;
+        jointTail.tIdentityTailPrev = jointHead.tIdentityTailPrev;
+        jointTail.tIdentityTail = jointHead.tIdentityTail;
+        jointTail.tIdentityHeadPrev = jointHead.tIdentityHeadPrev;
+
+        Joint newPinch = new Joint();
+
+        newPinch.id = GetNewJointID;
+        newPinch.linkType = LinkType.Rolling;
+        newPinch.body = manifold.bodyB;
+        newPinch.orientation = !jointHead.orientation;
+
+        CableMeshInterface.TangentAlgorithm(jointHead.body, newPinch.body, out jointHead.tangentOffsetTail, out newPinch.tangentOffsetHead, out jointHead.tIdentityTail, out newPinch.tIdentityHeadPrev, jointHead.orientation, newPinch.orientation, cable.CableHalfWidth);
+        jointHead.storedLength -= jointHead.body.ShapeSurfaceDistance(jointHead.tIdentityTail, jointHead.tIdentityHead, jointHead.orientation, cable.CableHalfWidth, false);
+        totalStoredLength -= jointHead.storedLength;
+        jointHead.tIdentityTailPrev = jointHead.tIdentityTail;
+        jointHead.tangentPointTail = jointHead.body.PulleyCentreGeometrical + jointHead.tangentOffsetTail;
+        jointHead.tangentOffsetTail = jointHead.tangentPointTail - jointHead.body.CenterOfMass;
+
+        CableMeshInterface.TangentAlgorithm(newPinch.body, jointTail.body, out newPinch.tangentOffsetTail, out jointTail.tangentOffsetHead, out newPinch.tIdentityTailPrev, out jointTail.tIdentityHead, newPinch.orientation, jointTail.orientation, cable.CableHalfWidth);
+        jointTail.storedLength -= jointTail.body.ShapeSurfaceDistance(jointTail.tIdentityTail, jointTail.tIdentityHead, jointTail.orientation, cable.CableHalfWidth, false);
+        totalStoredLength -= jointTail.storedLength;
+        jointTail.tIdentityHeadPrev = jointTail.tIdentityHead;
+        jointTail.tangentPointHead = jointTail.body.PulleyCentreGeometrical + jointTail.tangentOffsetHead;
+        jointTail.tangentOffsetHead = jointTail.tangentPointHead - jointTail.body.CenterOfMass;
+
+        float pinchStoredLength = newPinch.body.ShapeSurfaceDistance(newPinch.tIdentityTailPrev, newPinch.tIdentityHeadPrev, newPinch.orientation, cable.CableHalfWidth, false);
+        totalStoredLength -= pinchStoredLength;
+
+        Vector2 center = newPinch.body.PulleyCentreGeometrical;
+        newPinch.tangentPointTail = center + newPinch.tangentOffsetTail;
+        newPinch.tangentPointHead = center + newPinch.tangentOffsetHead;
+        center = newPinch.body.CenterOfMass;
+        newPinch.tangentOffsetTail = newPinch.tangentPointTail - center;
+        newPinch.tangentOffsetHead = newPinch.tangentPointHead - center;
+
+
+        jointHead.currentLength = (jointHead.tangentPointTail - newPinch.tangentPointHead).magnitude;
+        newPinch.currentLength = (jointTail.tangentPointHead - newPinch.tangentPointTail).magnitude;
+
+        // Adjust rest lengths so that tensions are equal:
+        float tension = totalStoredLength / (newPinch.currentLength + jointHead.currentLength);
+        newPinch.restLength = newPinch.currentLength * tension;
+        jointHead.restLength = jointHead.currentLength * tension;
+
+        // complete segment initialization
+        newPinch.positionError = newPinch.currentLength - newPinch.restLength;
+        jointHead.positionError = jointHead.currentLength - jointHead.restLength;
+
+        UpdatePinchedSegment(jointHead, newPinch, cable.CableHalfWidth, in manifold);
+        UpdatePinchedSegment(newPinch, jointTail, cable.CableHalfWidth, CableEngine.ReversedManifold(in manifold));
+
+        List<Joint> newJoints = new List<Joint>();
+        newJoints.Add(jointTail);
+        newJoints.Add(newPinch);
+
+        for (int i = 0; i < loops; i++)
+        {
+
+        }
+
+        cable.Joints.InsertRange(segmentIndex, newJoints);
 
         return true;
     }
