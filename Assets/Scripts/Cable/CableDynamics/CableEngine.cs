@@ -17,7 +17,7 @@ public class CableEngine : MonoBehaviour
     public List<CableRoot> Cables;
 
     [System.Serializable]
-    private struct BodyAttachmentManifold
+    private class BodyAttachmentManifold
     {
         public CableMeshInterface body;
         public float greatestMargin;
@@ -129,7 +129,7 @@ public class CableEngine : MonoBehaviour
         ContactConstraints.Clear();
         PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
         PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
-        ConfirmPinchContacts(in PotentialManifolds, ref ContactConstraints, Framecount);
+        ConfirmPinchContacts(in PotentialManifolds, ref ContactConstraints, ref AttachedBodies, ref FreeBodies);
 
         UpdateSlippingConditions(in Cables);
 
@@ -222,7 +222,7 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void ConfirmPinchContacts(in List<PotentialPinchManifold> manifolds, ref List<CablePinchManifold> contactConstraints, uint currentFrame)
+    static void ConfirmPinchContacts(in List<PotentialPinchManifold> manifolds, ref List<CablePinchManifold> contactConstraints, ref List<BodyAttachmentManifold> attachedBodies, ref List<BodyAttachmentManifold> freeBodies)
     {
         foreach (PotentialPinchManifold manifold in manifolds)
         {
@@ -258,22 +258,25 @@ public class CableEngine : MonoBehaviour
             // Check for transition pinch joints on body B.
             // if there are, removes the connected joint in jointsA as it needs not be checked more
             // if not a transition pinch joint, evaluate if it is on the stored cable section of a body and add new joints
+            List<CableRoot.Joint> newJoints;
             foreach ((CableRoot.Joint joint, CableRoot root) in jointsB)
             {
                 if (CableRoot.EvaluateTransitionPinchJoint(root, joint, in reversedManifold))
                 {
                     maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                 }
-                else if (CableRoot.EvaluatePinchJoint(root, joint, in reversedManifold))
+                else if (CableRoot.EvaluatePinchJoint(root, joint, in reversedManifold, out newJoints))
                 {
+                    RegisterJoints(in newJoints, manifold.attach1, manifold.attach2, root, ref attachedBodies, ref freeBodies);
                     maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                 }
             }
             // Evaluate any remaining joints from A if they are on the stored cable section of a body and add new joints
             foreach ((CableRoot.Joint joint, CableRoot root) in jointsA)
             {
-                if (CableRoot.EvaluatePinchJoint(root, joint, in manifold.manifold))
+                if (CableRoot.EvaluatePinchJoint(root, joint, in manifold.manifold, out newJoints))
                 {
+                    RegisterJoints(in newJoints, manifold.attach1, manifold.attach2, root, ref attachedBodies, ref freeBodies);
                     maxWidth = Mathf.Max(maxWidth, root.CableHalfWidth * 2);
                 }
             }
@@ -284,6 +287,39 @@ public class CableEngine : MonoBehaviour
                 CablePinchManifold temp = manifold.manifold;
                 temp.depth = maxWidth - temp.distance;
                 contactConstraints.Add(temp);
+            }
+        }
+    }
+
+    static void RegisterJoints(in List<CableRoot.Joint> joints, BodyAttachmentManifold bodyA, BodyAttachmentManifold bodyB, CableRoot root, ref List<BodyAttachmentManifold> attachedBodies, ref List<BodyAttachmentManifold> freeBodies)
+    {
+        foreach (CableRoot.Joint joint in joints)
+        {
+            BodyAttachmentManifold attachment;
+            if (bodyA.body == joint.body)
+            {
+                attachment = bodyA;
+            }
+            else
+            {
+                attachment = bodyB;
+            }
+
+            if (attachment.joints != null)
+            {
+                attachment.joints.Add((joint, root));
+                if (root.CableHalfWidth * 2 > attachment.greatestMargin)
+                    attachment.greatestMargin = root.CableHalfWidth * 2;
+            }
+            else
+            {
+                freeBodies.RemoveAt(freeBodies.FindIndex(x => x.body == attachment.body));
+
+                attachment.joints = new List<(CableRoot.Joint joint, CableRoot root)>();
+                attachment.joints.Add((joint, root));
+                attachment.greatestMargin = root.CableHalfWidth * 2;
+
+                attachedBodies.Add(attachment);
             }
         }
     }
@@ -378,8 +414,6 @@ public class CableEngine : MonoBehaviour
                 {
                     attachement.greatestMargin = hit.cable.CableHalfWidth * 2;
                 }
-
-                attachedBodies[i] = attachement;
             }
             else
             {
@@ -431,8 +465,36 @@ public class CableEngine : MonoBehaviour
                         freeBodies.Add(bodyAttachment);
                     }
 
-                    CableRoot.RemoveJoint(cable, joint);
-                    i--;
+                    CableRoot.Joint extraRemove;
+                    CableRoot.RemoveJoint(cable, joint, out extraRemove);
+
+                    if (extraRemove != null)
+                    {
+                        i = attachedBodies.FindIndex(x => x.body == extraRemove.body);
+                        attachment = attachedBodies[i];
+                        if (attachment.joints.Count > 1)
+                        {
+                            attachment.joints.RemoveAt(attachment.joints.FindIndex(x => x.joint.id == extraRemove.id));
+                            if (attachment.greatestMargin <= cable.CableHalfWidth * 2)
+                            {
+                                attachment.greatestMargin = attachment.joints[0].root.CableHalfWidth * 2;
+                                for (int j = 1; j < attachment.joints.Count; j++)
+                                {
+                                    if (attachment.greatestMargin < attachment.joints[j].root.CableHalfWidth * 2)
+                                    {
+                                        attachment.greatestMargin = attachment.joints[j].root.CableHalfWidth * 2;
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            attachedBodies.RemoveAt(i);
+                            BodyAttachmentManifold bodyAttachment = new BodyAttachmentManifold();
+                            bodyAttachment.body = joint.body;
+                            freeBodies.Add(bodyAttachment);
+                        }
+                    }
                 }
             }
         }

@@ -267,13 +267,52 @@ public class CableRoot : MonoBehaviour
         return Vector2.SignedAngle(joint.tangentOffsetTail, joint.tangentOffsetHead) > 0.0f;
     }
 
-    static public void RemoveJoint(CableRoot root, Joint joint)
+    static public void RemoveJoint(CableRoot root, Joint joint, out Joint extraRemovedJoint)
     {
         int segmentIndex = root.Joints.FindIndex(x => x == joint);
         Joint jointHead = root.Joints[segmentIndex + 1];
         Joint jointTail = root.Joints[segmentIndex - 1];
         Joint jointOld = joint;
         root.Joints.RemoveAt(segmentIndex);
+        if (jointHead.body == jointTail.body)
+        {
+            extraRemovedJoint = jointTail;
+            root.Joints.RemoveAt(segmentIndex - 1);
+
+            float totalRestLength = jointTail.storedLength + jointOld.restLength + jointOld.storedLength + jointHead.restLength + jointHead.storedLength;
+
+            jointHead.storedLength = jointTail.storedLength;
+            jointHead.restLength = jointTail.restLength;
+            jointHead.currentLength = jointTail.currentLength;
+            jointHead.positionError = jointTail.positionError;
+            jointHead.segmentTension = jointTail.segmentTension;
+            jointHead.tangentOffsetTail = jointTail.tangentOffsetTail;
+            jointHead.tangentPointTail = jointTail.tangentPointTail;
+            jointHead.tIdentityTailPrev = jointTail.tIdentityTailPrev;
+            jointHead.tIdentityTail = jointTail.tIdentityTail;
+            jointHead.cableUnitVector = jointTail.cableUnitVector;
+            jointHead.slipping = jointTail.slipping;
+
+            jointHead.storedLength = jointHead.body.ShapeSurfaceDistance(jointHead.tIdentityTail, jointHead.tIdentityHead, jointHead.orientation, root.CableHalfWidth, false);
+
+            totalRestLength -= jointHead.storedLength;
+
+            Joint jointHeadHead = root.Joints[segmentIndex];
+            // Adjust rest lengths so that tensions are equal:
+            float tension = totalRestLength / (jointHead.currentLength + jointHeadHead.currentLength);
+            jointHead.restLength += jointHead.currentLength * tension;
+            jointHeadHead.restLength += jointHeadHead.currentLength * tension;
+
+            // complete segment initialization
+            jointHead.positionError = jointHead.currentLength - jointHead.restLength;
+            jointHeadHead.positionError = jointHeadHead.currentLength - jointHeadHead.restLength;
+            jointHead.segmentTension = TensionEstimation(jointHead);
+            jointHeadHead.segmentTension = TensionEstimation(jointHeadHead);
+            
+            return;
+        }
+
+        extraRemovedJoint = null;
 
         jointHead.restLength += jointOld.restLength + jointOld.storedLength;
 
@@ -781,8 +820,9 @@ public class CableRoot : MonoBehaviour
         return ret;
     }
 
-    static public bool EvaluatePinchJoint(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold)
+    static public bool EvaluatePinchJoint(CableRoot cable, Joint joint, in CableMeshInterface.CablePinchManifold manifold, out List<Joint> newJoints)
     {
+        newJoints = new List<Joint>();
         if (!StoredCableIntersection(cable, joint, in manifold)) return false;
 
         //print("Super Pinch!!!");
@@ -812,6 +852,8 @@ public class CableRoot : MonoBehaviour
         jointTail.tIdentityTailPrev = jointHead.tIdentityTailPrev;
         jointTail.tIdentityTail = jointHead.tIdentityTail;
         jointTail.tIdentityHeadPrev = jointHead.tIdentityHeadPrev;
+        jointTail.cableUnitVector = jointHead.cableUnitVector;
+        jointTail.slipping = jointHead.slipping;
 
         Joint newPinch = new Joint();
 
@@ -835,7 +877,9 @@ public class CableRoot : MonoBehaviour
         jointTail.tangentOffsetHead = jointTail.tangentPointHead - jointTail.body.CenterOfMass;
 
         float pinchStoredLength = newPinch.body.ShapeSurfaceDistance(newPinch.tIdentityTailPrev, newPinch.tIdentityHeadPrev, newPinch.orientation, cable.CableHalfWidth, false);
-        totalStoredLength -= pinchStoredLength;
+        float storedBuffer = 0.0001f;
+        totalStoredLength -= pinchStoredLength + storedBuffer;
+        newPinch.storedLength = pinchStoredLength + storedBuffer;
 
         Vector2 center = newPinch.body.PulleyCentreGeometrical;
         newPinch.tangentPointTail = center + newPinch.tangentOffsetTail;
@@ -857,10 +901,9 @@ public class CableRoot : MonoBehaviour
         newPinch.positionError = newPinch.currentLength - newPinch.restLength;
         jointHead.positionError = jointHead.currentLength - jointHead.restLength;
 
-        UpdatePinchedSegment(jointHead, newPinch, cable.CableHalfWidth, in manifold);
         UpdatePinchedSegment(newPinch, jointTail, cable.CableHalfWidth, CableEngine.ReversedManifold(in manifold));
+        UpdatePinchedSegment(jointHead, newPinch, cable.CableHalfWidth, in manifold);
 
-        List<Joint> newJoints = new List<Joint>();
         newJoints.Add(jointTail);
         newJoints.Add(newPinch);
 
