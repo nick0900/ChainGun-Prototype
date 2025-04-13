@@ -111,6 +111,8 @@ abstract public class CableMeshInterface : CableMeshGeneration
     public bool constantFriction = false;
     public float staticFrictionCoeff = 0.2f;
     public float kineticFrictionCoeff = 0.1f;
+    public float minimumStaticFrictionCoeff = 0.2f;
+    public float minimumKineticFrictionCoeff = 0.1f;
     public float FrictionFactor(float slipSign, bool slipping, float storedCable, float cableWidth)
     {
         if (infiniteFriction) return 0.0f;
@@ -122,7 +124,7 @@ abstract public class CableMeshInterface : CableMeshGeneration
             return ret;
         }
 
-        return ShapeFrictionFactor(slipSign, slipping, storedCable, cableWidth);
+        return Mathf.Max((slipping) ? minimumKineticFrictionCoeff : minimumStaticFrictionCoeff, ShapeFrictionFactor(slipSign, slipping, storedCable, cableWidth));
     }
 
     virtual protected float ShapeFrictionFactor(float slipSign, bool slipping, float storedCable, float cableWidth)

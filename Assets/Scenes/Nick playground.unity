@@ -207,6 +207,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0
   kineticFrictionCoeff: 0
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 31488573}
 --- !u!114 &31488576
 MonoBehaviour:
@@ -484,6 +486,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 253307969}
   minSide: 1
   CalculatedMaxExtent: 0.9013878
@@ -1116,6 +1120,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 372062229}
   polygonData:
   - cornerNormal: {x: 0.54008996, y: 0.8416073}
@@ -1903,6 +1909,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 517337754}
   rb2d: {fileID: 0}
 --- !u!61 &517337754
@@ -2138,6 +2146,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.5
   kineticFrictionCoeff: 0.3
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 612329540}
 --- !u!114 &612329543
 MonoBehaviour:
@@ -3057,6 +3067,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 946826664}
 --- !u!114 &946826667
 MonoBehaviour:
@@ -4192,6 +4204,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 1264554394}
   polygonData:
   - cornerNormal: {x: 0.54008996, y: 0.8416073}
@@ -4389,6 +4403,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0
   kineticFrictionCoeff: 0
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 1286890988}
 --- !u!114 &1286890991
 MonoBehaviour:
@@ -4519,6 +4535,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 1313746799}
   rb2d: {fileID: 0}
 --- !u!114 &1313746798
@@ -5418,6 +5436,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 1525189709}
   rb2d: {fileID: 0}
 --- !u!61 &1525189709
@@ -5657,6 +5677,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 1610840840}
   rb2d: {fileID: 0}
 --- !u!114 &1610840844
@@ -6538,6 +6560,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 1854401377}
   minSide: 1
   CalculatedMaxExtent: 0.9013878
@@ -7090,6 +7114,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.2
   kineticFrictionCoeff: 0.1
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 1963711903}
   minSide: 2.97
   CalculatedMaxExtent: 2.8052852
@@ -7385,8 +7411,10 @@ MonoBehaviour:
   submesh: 0
   infiniteFriction: 0
   constantFriction: 0
-  staticFrictionCoeff: 0.6
+  staticFrictionCoeff: 1
   kineticFrictionCoeff: 0.4
+  minimumStaticFrictionCoeff: 1
+  minimumKineticFrictionCoeff: 0.4
   pulleyCollider: {fileID: 2015910255}
 --- !u!114 &2015910258
 MonoBehaviour:
@@ -7625,6 +7653,8 @@ MonoBehaviour:
   constantFriction: 0
   staticFrictionCoeff: 0.5
   kineticFrictionCoeff: 0.3
+  minimumStaticFrictionCoeff: 0.2
+  minimumKineticFrictionCoeff: 0.1
   pulleyCollider: {fileID: 2112283238}
 --- !u!114 &2112283241
 MonoBehaviour:
