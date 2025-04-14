@@ -1023,4 +1023,14 @@ public class CableRoot : MonoBehaviour
         joint.currentLength = newCurrentLength;
         joint.segmentTension = TensionEstimation(joint);
     }
+
+    static public float LengthTally(CableRoot cable)
+    {
+        float tally = 0.0f;
+        foreach (CableRoot.Joint joint in cable.Joints)
+        {
+            tally += joint.restLength + joint.storedLength;
+        }
+        return tally;
+    }
 }

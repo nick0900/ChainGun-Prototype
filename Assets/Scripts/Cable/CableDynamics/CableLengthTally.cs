@@ -18,16 +18,6 @@ public class CableLengthTally : MonoBehaviour
 
     private void FixedUpdate()
     {
-        print(cableRoot.name + " tallied length: " + LengthTally(cableRoot));
-    }
-
-    float LengthTally(CableRoot cable)
-    {
-        float tally = 0.0f;
-        foreach (CableRoot.Joint joint in cable.Joints)
-        {
-            tally += joint.restLength + joint.storedLength;
-        }
-        return tally;
+        print(cableRoot.name + " tallied length: " + CableRoot.LengthTally(cableRoot));
     }
 }
