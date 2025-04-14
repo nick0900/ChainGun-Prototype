@@ -64,6 +64,8 @@ public class CableRoot : MonoBehaviour
         [HideInInspector] public int slipJointsCount = 0;
         [HideInInspector] public float SlipA = 0.0f;
         [HideInInspector] public float SlipB = 0.0f;
+
+        [HideInInspector] public bool pinched = false;
     }
 
     public float CableHalfWidth = 0.05f;
@@ -75,6 +77,7 @@ public class CableRoot : MonoBehaviour
 
     static public void UpdateSegment(Joint head, Joint tail, float cableHalfWidth)
     {
+        head.pinched = false;
         if (head.linkType != LinkType.Rolling)
         {
             if (tail.linkType != LinkType.Rolling)
@@ -863,21 +866,21 @@ public class CableRoot : MonoBehaviour
         newPinch.orientation = !jointHead.orientation;
 
         CableMeshInterface.TangentAlgorithm(jointHead.body, newPinch.body, out jointHead.tangentOffsetTail, out newPinch.tangentOffsetHead, out jointHead.tIdentityTail, out newPinch.tIdentityHeadPrev, jointHead.orientation, newPinch.orientation, cable.CableHalfWidth);
-        jointHead.storedLength -= jointHead.body.ShapeSurfaceDistance(jointHead.tIdentityTail, jointHead.tIdentityHead, jointHead.orientation, cable.CableHalfWidth, false);
+        jointHead.storedLength = jointHead.body.ShapeSurfaceDistance(jointHead.tIdentityTail, jointHead.tIdentityHead, jointHead.orientation, cable.CableHalfWidth, false);
         totalStoredLength -= jointHead.storedLength;
         jointHead.tIdentityTailPrev = jointHead.tIdentityTail;
         jointHead.tangentPointTail = jointHead.body.PulleyCentreGeometrical + jointHead.tangentOffsetTail;
         jointHead.tangentOffsetTail = jointHead.tangentPointTail - jointHead.body.CenterOfMass;
 
         CableMeshInterface.TangentAlgorithm(newPinch.body, jointTail.body, out newPinch.tangentOffsetTail, out jointTail.tangentOffsetHead, out newPinch.tIdentityTailPrev, out jointTail.tIdentityHead, newPinch.orientation, jointTail.orientation, cable.CableHalfWidth);
-        jointTail.storedLength -= jointTail.body.ShapeSurfaceDistance(jointTail.tIdentityTail, jointTail.tIdentityHead, jointTail.orientation, cable.CableHalfWidth, false);
+        jointTail.storedLength = jointTail.body.ShapeSurfaceDistance(jointTail.tIdentityTail, jointTail.tIdentityHead, jointTail.orientation, cable.CableHalfWidth, false);
         totalStoredLength -= jointTail.storedLength;
         jointTail.tIdentityHeadPrev = jointTail.tIdentityHead;
         jointTail.tangentPointHead = jointTail.body.PulleyCentreGeometrical + jointTail.tangentOffsetHead;
         jointTail.tangentOffsetHead = jointTail.tangentPointHead - jointTail.body.CenterOfMass;
 
         float pinchStoredLength = newPinch.body.ShapeSurfaceDistance(newPinch.tIdentityTailPrev, newPinch.tIdentityHeadPrev, newPinch.orientation, cable.CableHalfWidth, false);
-        float storedBuffer = 0.0001f;
+        float storedBuffer = 0.00001f;
         totalStoredLength -= pinchStoredLength + storedBuffer;
         newPinch.storedLength = pinchStoredLength + storedBuffer;
 
@@ -982,6 +985,7 @@ public class CableRoot : MonoBehaviour
 
     static void UpdatePinchedSegment(Joint joint, Joint jointTail, float cableHalfWidth, in CableMeshInterface.CablePinchManifold manifold)
     {
+        joint.pinched = true;
         Vector2 segmentUnitVector = new Vector2(manifold.normal.y, -manifold.normal.x) * (joint.orientation ? 1.0f : -1.0f);
 
         Vector2 pinchPointA;

@@ -554,7 +554,7 @@ public class CableEngine : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (Application.isPlaying)
+        if (Application.isPlaying && DebugRenderContacts)
             foreach (CablePinchManifold manifold in ContactConstraints)
             {
                 if (manifold.contactCount > 0)

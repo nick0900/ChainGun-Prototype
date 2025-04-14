@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace Filo
@@ -92,16 +93,6 @@ namespace Filo
                 Length = 0;
             }
 
-            public void Close()
-            {
-
-                // Re-add the first sample at the end of the cable:
-                if (segmentCount > 0 && segments[0].Count > 0)
-                {
-                    segments[segmentCount - 1].Add(segments[0][0]);
-                }
-            }
-
         }
 
         public class CurveFrame{
@@ -120,9 +111,10 @@ namespace Filo
 
             public void Transport(Vector3 newPosition, Vector3 newTangent){
 
+                if (newTangent == Vector3.zero) return;
                 // Calculate delta rotation:
-                Quaternion rotQ = Quaternion.FromToRotation(tangent,newTangent);
-               
+                Quaternion rotQ = Quaternion.FromToRotation(tangent, newTangent);
+
                 // Rotate previous frame axes to obtain the new ones:
                 normal = rotQ * normal;
                 binormal = rotQ * binormal;
@@ -193,24 +185,27 @@ namespace Filo
             DestroyImmediate(mesh);
         }
 
-        private void SampleLink(CableRoot.Joint joint, CableMeshInterface link)
+        private void SampleLink(CableRoot.Joint joint, CableMeshInterface link, int i)
         {
             // Rolling links (only mid-cable)
             if (link.CableMeshPrimitiveType == CableMeshInterface.CMPrimitives.Circle)
             {
-                float distance = link.ShapeSurfaceDistance(joint.tIdentityTailPrev, joint.tIdentityHeadPrev, joint.orientation, cable.CableHalfWidth, false); ;
-                CircleAppendSamples(link as CirclePulley, sampledCable, joint.tangentPointTail, edgeLoopSpacing, distance, 0, false, joint.orientation);
+                //float distance = link.ShapeSurfaceDistance(joint.tIdentityTailPrev, joint.tIdentityHeadPrev, joint.orientation, cable.CableHalfWidth, false); ;
+                CircleAppendSamples(link as CirclePulley, sampledCable, joint.tangentPointTail, edgeLoopSpacing, joint.storedLength, 0, false, joint.orientation);
             }
             // Attachment links:        
             else
             {
-                    sampledCable.AppendSample(joint.tangentPointTail);
+                if (i == 0)
                     sampledCable.AppendSample(joint.tangentPointHead);
+                else
+                    sampledCable.AppendSample(joint.tangentPointTail);
             }
         }
 
         public float edgeLoopSpacingMultiplier = 1;
         public int maxEdgeLoops = 10000;
+        public float transitionMargin = 0.05f;
         void CircleAppendSamples(CirclePulley body, CableRenderer.SampledCable samples, Vector3 origin, float spacing, float distance, float spoolSeparation, bool reverse, bool orientation)
         {
             float sp = edgeLoopSpacingMultiplier * spacing;
@@ -218,12 +213,12 @@ namespace Filo
             // If the distance, sampling, radius are roughly zero, add the first sample and bail out.
             if (body.Radius < 1e-4 || distance < 1e-4 || sp < 1e-4)
             {
-                samples.AppendSample(origin);
+                //samples.AppendSample(origin);
                 return;
             }
 
             // Calculate angle using arc length:
-            float angle = distance / body.Radius;
+            float angle = distance / (body.Radius + cable.CableHalfWidth) - transitionMargin * 2;
             //int sampleCount = sp > 0.0001f ? Mathf.CeilToInt(angle / (Mathf.PI * sp)) : 0;
             int sampleCount = Mathf.Min((int)(distance / Mathf.Max(sp, 0.01f)), maxEdgeLoops);
 
@@ -233,14 +228,19 @@ namespace Filo
             float theta = -angle / sampleCount;
 
             // Decide whether to start at the origin or the end:
-            Vector3 result = origin;
+            Vector3 result = origin - (Vector3)body.PulleyCentreGeometrical;
+
+            if (theta < 0.0f)
+                result = Rotate2D(result, -transitionMargin);
+            else
+                result = Rotate2D(result, transitionMargin);
 
             // Sample cable:
-            samples.AppendSample(result, !reverse);
+            samples.AppendSample(result + (Vector3)body.PulleyCentreGeometrical, !reverse);
             for (int i = 0; i < sampleCount; ++i)
             {
                 result = Rotate2D(result, theta);
-                samples.AppendSample(result + axisOffset * (i + 1), !reverse);
+                samples.AppendSample(result + axisOffset * (i + 1) + (Vector3)body.PulleyCentreGeometrical, !reverse);
             }
 
             if (reverse)
@@ -262,6 +262,8 @@ namespace Filo
         {
             Vector3 p1 = jointTail.tangentPointHead;
             Vector3 p2 = joint.tangentPointTail;
+            if ((p1 - p2).magnitude < 1e-4) return;
+            
             int samples;
 
             if (joint.currentLength < joint.restLength && loosenessScale > 0)
@@ -313,7 +315,7 @@ namespace Filo
                     
 
                     // Sample the link, except if the cable is closed and this is the first link.
-                    SampleLink(joint, joint.body);
+                    SampleLink(joint, joint.body, i);
 
                     // Sample the joint (only adds sample points if cable is not tense):
                     if (i > 0)
