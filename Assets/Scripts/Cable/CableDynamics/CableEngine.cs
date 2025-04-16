@@ -112,6 +112,8 @@ public class CableEngine : MonoBehaviour
 
     public bool DebugRenderContacts = false;
 
+    public bool SolveContactConstraints = true;
+
     static uint Framecount = 0;
     void FixedUpdate()
     {
@@ -138,7 +140,7 @@ public class CableEngine : MonoBehaviour
 
         PinchInitializeContactConstraints(ref ContactConstraints);
 
-        Solver(in SegmentConstraints, ref ContactConstraints, SolverIterations, SegmentsBias, ContactsBias);
+        Solver(in SegmentConstraints, ref ContactConstraints, SolverIterations, SegmentsBias, ContactsBias, SolveContactConstraints);
     }
 
     static void UpdateSegments(in List<CableRoot> cables)
@@ -527,7 +529,7 @@ public class CableEngine : MonoBehaviour
         }
     }
 
-    static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> segmentConstraints, ref List<CablePinchManifold> pinchConstraints, uint iterations, float segmentBias, float contactBias)
+    static void Solver(in List<(CableRoot.Joint joint, int index, CableRoot cable)> segmentConstraints, ref List<CablePinchManifold> pinchConstraints, uint iterations, float segmentBias, float contactBias, bool solveContactConstraints)
     {
         for (int i = 0; i < iterations; i++)
         {
@@ -543,12 +545,13 @@ public class CableEngine : MonoBehaviour
                 }
             }
 
-            for (int j = 0; j < pinchConstraints.Count; j++)
-            {
-                CablePinchManifold contactManifold = pinchConstraints[j];
-                CableMeshInterface.ContactConstraintSolve(ref contactManifold, contactBias);
-                pinchConstraints[j] = contactManifold;
-            }
+            if (solveContactConstraints)
+                for (int j = 0; j < pinchConstraints.Count; j++)
+                {
+                    CablePinchManifold contactManifold = pinchConstraints[j];
+                    CableMeshInterface.ContactConstraintSolve(ref contactManifold, contactBias);
+                    pinchConstraints[j] = contactManifold;
+                }
         }
     }
 
