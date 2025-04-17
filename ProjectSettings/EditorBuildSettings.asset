@@ -6,6 +6,6 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/Nick playground.unity
+    path: Assets/Scenes/userstudy scene1.unity
     guid: da327208a3c88a54e95ac6f374226e9a
   m_configObjects: {}
