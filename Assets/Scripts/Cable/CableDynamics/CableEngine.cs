@@ -113,6 +113,7 @@ public class CableEngine : MonoBehaviour
     public bool DebugRenderContacts = false;
 
     public bool SolveContactConstraints = true;
+    public bool PinchIntersections = true;
 
     static uint Framecount = 0;
     void FixedUpdate()
@@ -126,12 +127,15 @@ public class CableEngine : MonoBehaviour
         SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
         AddJoints(in SegmentHits, ref AttachedBodies, ref FreeBodies);
 
-        NearContacts.Clear();
-        PotentialManifolds.Clear();
-        ContactConstraints.Clear();
-        PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
-        PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
-        ConfirmPinchContacts(in PotentialManifolds, ref ContactConstraints, ref AttachedBodies, ref FreeBodies);
+        if (PinchIntersections)
+        {
+            NearContacts.Clear();
+            PotentialManifolds.Clear();
+            ContactConstraints.Clear();
+            PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
+            PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
+            ConfirmPinchContacts(in PotentialManifolds, ref ContactConstraints, ref AttachedBodies, ref FreeBodies);
+        }
 
         UpdateSlippingConditions(in Cables);
 
