@@ -828,7 +828,7 @@ public class CableRoot : MonoBehaviour
         newJoints = new List<Joint>();
         if (!StoredCableIntersection(cable, joint, in manifold)) return false;
 
-        //print("Super Pinch!!!");
+        print("Super Pinch!!!");
 
         int segmentIndex = cable.Joints.FindIndex(x => x.id == joint.id);
         Joint jointHead = joint;

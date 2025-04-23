@@ -124,8 +124,8 @@ public class CableEngine : MonoBehaviour
         RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
 
         SegmentHits.Clear();
-        SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
-        AddJoints(in SegmentHits, ref AttachedBodies, ref FreeBodies);
+        //SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
+        //AddJoints(in SegmentHits, ref AttachedBodies, ref FreeBodies);
 
         if (PinchIntersections)
         {
