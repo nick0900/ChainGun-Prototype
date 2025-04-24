@@ -584,7 +584,7 @@ MonoBehaviour:
   - {fileID: 1610840839}
   AttachedBodies: []
   FreeBodies: []
-  DebugRenderContacts: 0
+  DebugRenderContacts: 1
   SolveContactConstraints: 1
   PinchIntersections: 1
 --- !u!4 &991079603

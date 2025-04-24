@@ -929,6 +929,8 @@ public class CableRoot : MonoBehaviour
         float tp = Vector2.Dot(p, joint.tangentOffsetTail);
         float hp = Vector2.Dot(p, joint.tangentOffsetHead);
 
+        if (tp == hp) return false;
+
         if (joint.orientation)
         {
             if (tp > -epsilon)
