@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Mail;
 using Unity.Burst.CompilerServices;
 using UnityEngine;
+using UnityEngine.Profiling;
 using static CableMeshInterface;
 using static CableRoot;
 using static UnityEngine.EventSystems.EventTrigger;
@@ -118,33 +119,59 @@ public class CableEngine : MonoBehaviour
     static uint Framecount = 0;
     void FixedUpdate()
     {
+        Profiler.BeginSample("Total Cable Loop");
         Framecount++;
+        Profiler.BeginSample("Update Segments");
         UpdateSegments(in Cables);
+        Profiler.EndSample();
 
+        Profiler.BeginSample("Remove Joints");
         RemoveJoints(ref Cables, ref AttachedBodies, ref FreeBodies);
+        Profiler.EndSample();
 
         SegmentHits.Clear();
-        //SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
-        //AddJoints(in SegmentHits, ref AttachedBodies, ref FreeBodies);
+        Profiler.BeginSample("Segment Intersection");
+        SegmentsIntersections(in Bodies, in Cables, ref SegmentHits);
+        Profiler.EndSample();
+        Profiler.BeginSample("Add Joints");
+        AddJoints(in SegmentHits, ref AttachedBodies, ref FreeBodies);
+        Profiler.EndSample();
 
         if (PinchIntersections)
         {
             NearContacts.Clear();
             PotentialManifolds.Clear();
             ContactConstraints.Clear();
+            Profiler.BeginSample("Pinch Intersection");
+            Profiler.BeginSample("Pinch Broad");
             PinchBroadPhase(in AttachedBodies, in FreeBodies, ref NearContacts);
+            Profiler.EndSample();
+            Profiler.BeginSample("Pinch Narrow");
             PinchNarrowPhase(in NearContacts, ref PotentialManifolds);
+            Profiler.EndSample();
+            Profiler.BeginSample("Pinch Confirm and Configure");
             ConfirmPinchContacts(in PotentialManifolds, ref ContactConstraints, ref AttachedBodies, ref FreeBodies);
+            Profiler.EndSample();
+            Profiler.EndSample();
         }
 
+        Profiler.BeginSample("Slip Update");
         UpdateSlippingConditions(in Cables);
+        Profiler.EndSample();
 
+        Profiler.BeginSample("Init Segment Constraints");
         SegmentConstraints.Clear();
         InitializeSegmentConstraints(in Cables, ref SegmentConstraints);
+        Profiler.EndSample();
 
+        Profiler.BeginSample("Init Contact Constraints");
         PinchInitializeContactConstraints(ref ContactConstraints);
+        Profiler.EndSample();
 
+        Profiler.BeginSample("Cable Solver");
         Solver(in SegmentConstraints, ref ContactConstraints, SolverIterations, SegmentsBias, ContactsBias, SolveContactConstraints);
+        Profiler.EndSample();
+        Profiler.EndSample();
     }
 
     static void UpdateSegments(in List<CableRoot> cables)
