@@ -107,13 +107,35 @@ public class BoxPulley : CableMeshInterface
 
     public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float cableHalfWidth, out float identity)
     {
+        Vector2 topRight = this.transform.TransformPoint(new Vector2(pulleyCollider.size.x / 2 + cableHalfWidth, pulleyCollider.size.y / 2 + cableHalfWidth));
+        Vector2 topLeft = this.transform.TransformPoint(new Vector2(-(pulleyCollider.size.x / 2 + cableHalfWidth), pulleyCollider.size.y / 2 + cableHalfWidth));
+        Vector2 bottomleft = this.transform.TransformPoint(new Vector2(-(pulleyCollider.size.x / 2 + cableHalfWidth), -(pulleyCollider.size.y / 2 + cableHalfWidth)));
+        Vector2 bottomRight = this.transform.TransformPoint(new Vector2(pulleyCollider.size.x / 2 + cableHalfWidth, -(pulleyCollider.size.y / 2 + cableHalfWidth)));
+
+        Vector2[] corners = {topRight, topLeft, bottomleft, bottomRight};
+
+        float biggestAngle = 0.0f;
+        int biggest = 0;
+        for (int i = 0; i < corners.Length; i++)
+        {
+            float tempAngle = Vector2.SignedAngle(PulleyCentreGeometrical - point, corners[i] - point);
+            if (orientation ? tempAngle < biggestAngle : tempAngle > biggestAngle)
+            {
+                biggestAngle = tempAngle;
+                biggest = i;
+            }
+        }
+        identity = (float)biggest;
+        return corners[biggest] - PulleyCentreGeometrical;
+
+        /*
         Vector2 topRight = this.transform.TransformPoint(new Vector2(pulleyCollider.size.x/2 + cableHalfWidth, pulleyCollider.size.y/2 + cableHalfWidth));
         Vector2 topLeft = this.transform.TransformPoint(new Vector2(-(pulleyCollider.size.x/2 + cableHalfWidth), pulleyCollider.size.y/2 + cableHalfWidth));
         Vector2 bottomleft = this.transform.TransformPoint(new Vector2(-(pulleyCollider.size.x/2 + cableHalfWidth), -(pulleyCollider.size.y/2 + cableHalfWidth)));
         Vector2 bottomRight = this.transform.TransformPoint(new Vector2(pulleyCollider.size.x/2 + cableHalfWidth, -(pulleyCollider.size.y/2 + cableHalfWidth)));
 
         Vector2[] corners = {topRight, topLeft, bottomleft, bottomRight};
-
+          
         Vector2 squareRightVector = PulleyToWorldTransform(Vector2.right) - PulleyCentreGeometrical;
         Vector2 squarePointVector = point - PulleyCentreGeometrical;
 
@@ -176,6 +198,7 @@ public class BoxPulley : CableMeshInterface
         identity = vertex;
 
         return corners[vertex] - PulleyCentreGeometrical;
+        */
     }
 
     public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableHalfWidth, bool useSmallest)

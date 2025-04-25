@@ -74,9 +74,12 @@ abstract public class CableMeshInterface : CableMeshGeneration
         float newIdentity2 = 0;
         Vector2 newTan1 = pulley1.RandomSurfaceOffset(ref newIdentity1, cableHalfWidth);
         Vector2 newTan2 = Vector2.zero;
+        uint iterations = 0;
 
         do
         {
+            if (iterations > 10)
+                print("Broh!");
             if (alternator)
             {
                 tangent2 = newTan2;
@@ -95,8 +98,12 @@ abstract public class CableMeshInterface : CableMeshGeneration
 
                 alternator = true;
             }
+            iterations++;
 
-        } while (alternator ? (tangent2 != newTan2) : (tangent1 != newTan1));
+        } while ((iterations < 64) && (alternator ? (tangent2 != newTan2) : (tangent1 != newTan1)));
+
+        if (iterations == 64)
+            print("Tangent Algorithm Not Converging");
     }
 
     abstract public Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableHalfWidth);
