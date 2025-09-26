@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+//using System.Numerics;
 
 [System.Serializable]
 public class ConvexPolygonPulley : CableMeshInterface
@@ -19,6 +20,8 @@ public class ConvexPolygonPulley : CableMeshInterface
     [HideInInspector][SerializeField] private List<VertexData> polygonData = null;
 
     [HideInInspector][SerializeField] float minSide = 0;
+
+    [HideInInspector][SerializeField] float CalculatedMaxExtent = 0.0f;
 
     public override CMPrimitives CableMeshPrimitiveType { get { return CMPrimitives.polygon; } }
 
@@ -51,6 +54,12 @@ public class ConvexPolygonPulley : CableMeshInterface
 
     public override float SafeStoredLength { get { return minSide; } }
 
+    public override Bounds PulleyBounds { get { return pulleyCollider.bounds; } }
+
+    public override Vector2 CenterOfMass { get { return PulleyAttachedRigidBody != null ? PulleyAttachedRigidBody.worldCenterOfMass : PulleyCentreGeometrical; } }
+
+    public override float MaxExtent { get { return CalculatedMaxExtent; } }
+
     protected override void SetupMesh()
     {
         pulleyCollider = GetComponent<PolygonCollider2D>();
@@ -58,6 +67,16 @@ public class ConvexPolygonPulley : CableMeshInterface
         if (pulleyCollider == null) return;
 
         UpdatePolygonData();
+
+        CalculatedMaxExtent = pulleyCollider.points[0].magnitude;
+        for (int i = 1; i < pulleyCollider.points.Length; i++)
+        {
+            float extent = pulleyCollider.points[i].magnitude;
+            if (extent > CalculatedMaxExtent)
+            {
+                CalculatedMaxExtent = extent;
+            }
+        }
     }
 
     protected override void RemoveCableMesh()
@@ -301,7 +320,7 @@ public class ConvexPolygonPulley : CableMeshInterface
         return Vector2.SignedAngle(cableVector, centreVector) >= 0;
     }
 
-    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainWidth, out float identity)
+    public override Vector2 PointToShapeTangent(in Vector2 point, bool orientation, float chainHalfWidth, out float identity)
     {
         int highestIndex = 0;
         Vector2 highestVector = PulleyCentreGeometrical + pulleyCollider.points[highestIndex] - point;
@@ -322,10 +341,10 @@ public class ConvexPolygonPulley : CableMeshInterface
         identity = highestIndex;
 
 
-        return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) - PulleyCentreGeometrical + polygonData[highestIndex].cornerNormal * chainWidth / 2;
+        return PulleyToWorldTransform(pulleyCollider.points[highestIndex]) - PulleyCentreGeometrical + polygonData[highestIndex].cornerNormal * chainHalfWidth;
     }
 
-    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableWidth, bool useSmallest)
+    public override float ShapeSurfaceDistance(float prevIdentity, float currIdentity, bool orientation, float cableHalfWidth, bool useSmallest)
     {
         int prevVertex = (int)prevIdentity;
         int currVertex = (int)currIdentity;
@@ -384,16 +403,71 @@ public class ConvexPolygonPulley : CableMeshInterface
         return firstDistance;
     }
 
-    public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableWidth)
+    public override Vector2 RandomSurfaceOffset(ref float pointIdentity, float cableHalfWidth)
     {
         int pointIndex = Random.Range(0, polygonData.Count - 1);
         pointIdentity = pointIndex;
 
-        return PulleyToWorldTransform(pulleyCollider.points[pointIndex]) - PulleyCentreGeometrical + polygonData[pointIndex].cornerNormal * cableWidth / 2;
+        return PulleyToWorldTransform(pulleyCollider.points[pointIndex]) - PulleyCentreGeometrical + polygonData[pointIndex].cornerNormal * cableHalfWidth;
     }
 
-    public override void CreateChainCollider(float chainWidth)
+    public override Vector2 FurthestPoint(Vector2 direction)
     {
-        throw new System.NotImplementedException();
+        Vector2 point = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + pulleyCollider.points[0]);
+        float maxDot = Vector2.Dot(point, direction);
+
+        for (int i = 1; i < pulleyCollider.points.Length; i++)
+        {
+            Vector2 tempPoint = pulleyCollider.transform.TransformPoint(pulleyCollider.offset + pulleyCollider.points[i]);
+            float tempDot = Vector2.Dot(tempPoint, direction);
+            if (tempDot > maxDot)
+            {
+                point = tempPoint;
+                maxDot = tempDot;
+            }
+        }
+        return point;
+    }
+
+    public override int IndexFromPoint(Vector2 point)
+    {
+        point = ((Vector2)pulleyCollider.transform.InverseTransformPoint(point)) + pulleyCollider.offset;
+
+        for (int i = 0; i < pulleyCollider.points.Length; ++i)
+        {
+            if (Mathf.Abs((point.x - pulleyCollider.points[i].x) + (point.y - pulleyCollider.points[i].y)) <= 0.0001)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public override Vector2 GetNextPoint(int i)
+    {
+        if (i >= (pulleyCollider.points.Length - 1))
+        {
+            return pulleyCollider.points[0];
+        }
+        return pulleyCollider.points[i + 1];
+    }
+
+    public override Vector2 GetPreviousPoint(int i)
+    {
+        if (i <= 0)
+        {
+            return pulleyCollider.points[pulleyCollider.points.Length - 1];
+        }
+        return pulleyCollider.points[i - 1];
+    }
+
+    public override float LoopLength(float cableHalfWidth)
+    {
+        float sum = 0.0f;
+        foreach (VertexData vertex in polygonData)
+        {
+            sum += vertex.edgeLength;
+        }
+        return sum;
     }
 }

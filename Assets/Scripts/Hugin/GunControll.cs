@@ -6,14 +6,12 @@ public class GunControll : MonoBehaviour
 {
     [SerializeField] GunConnector connectorGun;
 
-    [SerializeField] CableAnchor anchorGun;
+    //[SerializeField] CableAnchor anchorGun;
 
-    [SerializeField] AnchorEndConnector connectorNode;
+    //[SerializeField] AnchorEndConnector connectorNode;
 
 
     [SerializeField] int maxProjectiles = 10;
-
-    [SerializeField] float totalChainLength = 2;
 
     [SerializeField] float triggerDelay = 0.3f;
 
@@ -286,17 +284,17 @@ public class GunControll : MonoBehaviour
 
     void ConnectAnchor()
     {
-        anchorGun.head.RB2D.simulated = true;
+        //anchorGun.head.RB2D.simulated = true;
 
-        currentProjectile.ConnectObject(connectorNode);
+        //currentProjectile.ConnectObject(connectorNode);
     }
 
     void DisconnectAnchor()
     {
-        currentProjectile.ConnectObject(null);
+        //currentProjectile.ConnectObject(null);
 
-        anchorGun.head.RB2D.simulated = false;
+        //anchorGun.head.RB2D.simulated = false;
 
-        anchorGun.head.transform.position = this.transform.position;
+        //anchorGun.head.transform.position = this.transform.position;
     }
 }
